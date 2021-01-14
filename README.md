@@ -2,6 +2,24 @@
 
 ## _This is the GIT development platform for algorithms that generate CHADA (characteristic data) from a given Raman spectrum. It refers to CHARISMA Work Package 4._
 
+### WWW resources (_Please add!_)
+#### Readers
+- spc file format: https://docuri.com/download/spc-file-format_59c1d322f581710b28653306_pdf
+- _gwyddion_ file formats: http://gwyddion.net/documentation/user-guide-en/file-formats.html
+- _wit_io_ repository (Matlab implementation of WITec SUITE): https://gitlab.com/jtholmi/wit_io
+- Formats on _Spectroscopy Ninja_: https://www.effemm2.de/info/info_free_sw.html
+
+#### Baseline separation
+- Python code for _SNIP_: https://stackoverflow.com/questions/57350711/baseline-correction-for-spectroscopic-data, https://stackoverflow.com/questions/57350711/baseline-correction-for-spectroscopic-data
+- Python code for ALS: https://stackoverflow.com/questions/29156532/python-baseline-correction-library
+
+#### Spectrum calibration
+- Affine transforms: https://scipy-lectures.org/packages/scikit-image/auto_examples/plot_features.html
+- _Rascal_ Python library for automated spectrometer wavelength calibration: https://pypi.org/project/rascal/, https://arxiv.org/abs/1912.05883
+- _xcal_raman_ Python functions for wavenumber calibration of Raman spectrometers: https://pypi.org/project/xcal_raman/
+- _Scikit-spectra_: Explorative Spectroscopy in Python: https://openresearchsoftware.metajnl.com/articles/10.5334/jors.bs/
+
+
 ### Relevant Raman manufacturers, OEM software, and file formats
 | # | Manufacturer name | OEM Software Name | Extension of native format |Is  a Python reader available (which)? |
 | ------ | ------ | ------ | ------ |------ |
