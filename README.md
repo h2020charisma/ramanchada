@@ -1,6 +1,6 @@
-# CHARISMA - Raman spectrum harmonization
+# **CHARISMA - Raman spectrum harmonization**
 
-## This is the GIT development platform for algorithms that generate CHADA (characteristic data) from a given Raman spectrum. It refers to CHARISMA Work Package 4.
+## _This is the GIT development platform for algorithms that generate CHADA (characteristic data) from a given Raman spectrum. It refers to CHARISMA Work Package 4._
 
 ### Relevant Raman manufacturers, OEM software, and file formats
 | # | Manufacturer name | OEM Software Name | Extension of native format |Is  a Python reader available (which)? |
@@ -45,8 +45,8 @@
 1. Grating:	G1: 600 g/mm BLZ=750nm
 1. Center Wavelength [nm]:	847.998
 1. Spectral Center [rel. 1/cm]:	946.372
-1. 	
-1. CCD camera	
+__ 	
+- CCD camera	
 1. Name	DU401_DD:
 1. Width [Pixels]:	1024
 1. Height [Pixels]:	128
