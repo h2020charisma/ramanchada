@@ -29,7 +29,7 @@
 4|	Witec	|	SUITE	| wit|	|
 5|	Thermo Fisher	|	GRAMS	|spc|	OpenSpectralWorks, specio|
 6|	Kaiser	|	Hologram	|.hol	||
-7|	Bruker	|	OPUS	|||	
+7|	Bruker	|	OPUS	|.spa||	
 8	|Cytospec	|		Matlab	|||
 9	|Andor	|		Andor Solis| ASCII	||
 10|Princeton Instruments	||		spe	||
