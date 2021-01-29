@@ -1,0 +1,34 @@
+build: false
+
+environment:
+  # There is no need to run the build for all the Python version /
+  # architectures combo as the generated nilearn wheel is the same on all
+  # platforms (universal wheel).
+  # We run the tests on 2 different target platforms for testing purpose only.
+  # We use miniconda versions of Python provided by appveyor windows images
+  matrix:
+    - PYTHON: "C:\\Miniconda-x64"
+      PYTHON_VERSION: "2.7.x"
+      PYTHON_ARCH: "64"
+
+    - PYTHON: "C:\\Miniconda3-x64"
+      PYTHON_VERSION: "3.5.x"
+      PYTHON_ARCH: "64"
+
+    - PYTHON: "C:\\Miniconda3-x64"
+      PYTHON_VERSION: "3.6.x"
+      PYTHON_ARCH: "64"
+
+install:
+  # Prepend miniconda installed Python to the PATH of this build
+  # Add Library/bin directory to fix issue
+  # https://github.com/conda/conda/issues/1753
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PYTHON%\\Library\\bin;%PATH%"
+  - conda install pip numpy six pytest pytest-cov pytest-mock -y -q
+  - pip install -r requirements.txt
+  - pip install .
+
+test_script:
+  - mkdir for_test
+  - cd for_test
+  - pytest --pyargs specio --cov-report term-missing --cov=specio

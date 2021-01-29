@@ -1,0 +1,23 @@
+dist: trusty
+sudo: false
+
+language: python
+
+cache:
+  apt: true
+  directories:
+    - $HOME/.cache/pip
+
+matrix:
+  include:
+    - env: PYTHON_VERSION="2.7"
+    - env: PYTHON_VERSION="3.5"
+    - env: PYTHON_VERSION="3.6"
+
+install: source build_tools/travis/install.sh
+
+script:
+  - pytest -lv --cov-report term-missing specio --cov=specio
+
+after_success:
+  - codecov
