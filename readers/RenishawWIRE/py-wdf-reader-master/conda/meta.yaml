@@ -1,0 +1,38 @@
+{% set data = load_setup_py_data() %}
+{% set version = data['version'] %}
+
+package:
+  name: renishaw_wire
+  version: {{ data['version'] }}
+
+source:
+  git_url: ../
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - python -m pip install .
+  entry_points:
+    - wdf-export = renishawWiRE.export:main
+
+requirements:
+  build:
+    - python
+    - pip
+  run:
+    - python
+    - numpy >=1.12.0
+    - matplotlib >=2.1.0
+    - Pillow >=3.4.0
+
+test:
+  imports:
+    - renishawWiRE
+
+about:
+  home: https://github.com/alchem0x2A/py-wdf-reader
+  license: GPL-3
+  license_family: GPL
+  summary: 'Reading wdf Raman spectroscopy file from Renishaw WiRE'
+
