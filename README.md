@@ -17,30 +17,11 @@
 - Affine transforms: https://scipy-lectures.org/packages/scikit-image/auto_examples/plot_features.html
 - _Rascal_ Python library for automated spectrometer wavelength calibration: https://pypi.org/project/rascal/, https://arxiv.org/abs/1912.05883
 - _xcal_raman_ Python functions for wavenumber calibration of Raman spectrometers: https://pypi.org/project/xcal_raman/
-- _Scikit-spectra_: Explorative Spectroscopy in Python: https://openresearchsoftware.metajnl.com/articles/10.5334/jors.bs/
+- _Scikit-spectra_: Explorative Spectroscopy in Python: https://openresearchsoftware.metajnl.com/articles/10.5334/jors.bs/ 
 
 
 ### Relevant Raman manufacturers, OEM software, and file formats
-| # | Manufacturer name | OEM Software Name | Extension of native format |Is  a Python reader available (which)? |
-| ------ | ------ | ------ | ------ |------ |
-1|	Renishaw	|	WiRE|	spc	||
-2|	BWTek	|	BWSpec	|	||
-3	|Horiba	|	LabSpec	|spc	||
-4|	Witec	|	SUITE	| wit|	|
-5|	Thermo Fisher	|	GRAMS	|spc|	OpenSpectralWorks, specio|
-6|	Kaiser	|	Hologram	|.hol	||
-7|	Bruker	|	OPUS	|.spa||	
-8	|Cytospec	|		Matlab	|||
-9	|Andor	|		Andor Solis| ASCII	||
-10|Princeton Instruments	||		spe	||
-11|	Jascom	||||			
-12|	JRM	||||			
-13|	Ostec /sol instruments		||||		
-14|	Parr	||||	
-15|	physical optics		||||		
-16	|timegate instruments	||||			
-17|	agilent			||||	
-18|	Perkin Elmer	|	Spectrum		|||
+[List of relevant manufacturers and file formats](documents/Raman data formats.xlsx)
 
 ### CHADA meta data seed list	
 - Instrument	
