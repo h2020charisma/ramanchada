@@ -2,6 +2,12 @@
 
 ## _This is the GIT development platform for algorithms that generate CHADA (characteristic data) from a given Raman spectrum. It refers to CHARISMA Work Package 4._
 
+### Relevant use cases: what will CHADA be used for ?
+[List of CHADA use cases (living document - please add !)](documents/Use cases CHADA.xlsx)
+
+### Relevant Raman manufacturers, OEM software, and file formats
+[List of relevant manufacturers and file formats (living document - please add !)](documents/Raman data formats.xlsx)
+
 ### WWW resources (_Please add!_)
 #### Readers
 - spc file format: https://docuri.com/download/spc-file-format_59c1d322f581710b28653306_pdf
@@ -18,10 +24,6 @@
 - _Rascal_ Python library for automated spectrometer wavelength calibration: https://pypi.org/project/rascal/, https://arxiv.org/abs/1912.05883
 - _xcal_raman_ Python functions for wavenumber calibration of Raman spectrometers: https://pypi.org/project/xcal_raman/
 - _Scikit-spectra_: Explorative Spectroscopy in Python: https://openresearchsoftware.metajnl.com/articles/10.5334/jors.bs/ 
-
-
-### Relevant Raman manufacturers, OEM software, and file formats
-[List of relevant manufacturers and file formats](documents/Raman data formats.xlsx)
 
 ### CHADA meta data seed list	
 - Instrument	
