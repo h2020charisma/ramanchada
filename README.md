@@ -2,7 +2,7 @@
 
 ## _This is the GIT development platform for algorithms that generate CHADA (characteristic data) from a given Raman spectrum. It refers to CHARISMA Work Package 4._
 
-### Quick Start
+### Quick Start for users
 
 #### Pip
 
@@ -36,6 +36,10 @@ cd work
 pip install -r requirements.txt
 jupyter notebook --ip 0.0.0.0 --allow-root --no-browser
 ```
+
+### Quick Start for contributors
+
+Please see the [Contributor Guide](CONTRIBUTING.md).
 
 ### What is the CHARISMA Project ?
 - Visit the [CHARISMA Home Page](https://www.h2020charisma.eu/) !
@@ -80,4 +84,4 @@ You have to install ramanchada package before using the notebooks - see _Quick S
 - Affine transforms: https://scipy-lectures.org/packages/scikit-image/auto_examples/plot_features.html
 - _Rascal_ Python library for automated spectrometer wavelength calibration: https://pypi.org/project/rascal/, https://arxiv.org/abs/1912.05883
 - _xcal_raman_ Python functions for wavenumber calibration of Raman spectrometers: https://pypi.org/project/xcal_raman/
-- _Scikit-spectra_: Explorative Spectroscopy in Python: https://openresearchsoftware.metajnl.com/articles/10.5334/jors.bs/   
+- _Scikit-spectra_: Explorative Spectroscopy in Python: https://openresearchsoftware.metajnl.com/articles/10.5334/jors.bs/
