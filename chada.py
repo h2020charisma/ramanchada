@@ -15,11 +15,15 @@ from specio import specread
 
 class Chada():
     def __init__(self, file):
-        f = open(file, "rb", buffering=0)
-        self.binary_data = f.read()
-        f.close()
+        try:
+            f = open(file, "rb", buffering=0)
+            self.binary_data = f.read()
+        except Exception as err:
+            raise err 
+        finally:    
+            f.close()
         self.readers = {'.spc': specread, '.wdf': WDFReader}
-        self.filename = file[file.rfind("\\")+2:]
+        self.filename = file[file.rfind(os.path.sep)+2:]
         ext = file[file.rfind("."):]
         reader = self.readers[ext]
         s = reader(file)
@@ -51,13 +55,21 @@ class Chada():
         return pd.DataFrame.from_dict(self.metadata, orient='index', columns=['value'])
     
     def data(self):
-        specfile = TemporaryFile("wb", delete=False)
-        specfile.write(self.binary_data)
-        ext = self.metadata["native format"]
-        specfile.close()
-        reader = self.readers[ext]
-        s = reader(specfile.name)
-        s.close()
+        try:
+            specfile = TemporaryFile("wb", delete=False)
+            specfile.write(self.binary_data)
+            ext = self.metadata["native format"]
+        except Exception as err:
+            raise err
+        finally:    
+            specfile.close()
+        try:    
+            reader = self.readers[ext]
+            s = reader(specfile.name)
+        except Exception as err:
+            raise err
+        finally:
+            s.close()
         os.unlink(specfile.name)
 #        counts = s.amplitudes
 #        wavenumbers = s.wavelength
@@ -72,7 +84,7 @@ class Chada():
         if hasattr(self, 'background_model'):
             counts -= self.background_model
         return wavenumbers, counts
-    
+
     def plot(self, save_fig_name = ""):
         wavenumbers, counts = self.data()
         ylabel = self.metadata["spectral unit"]
