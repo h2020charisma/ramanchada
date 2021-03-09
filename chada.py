@@ -1,3 +1,7 @@
+# Written by Bastian Barton, Fraunhofer LBF, as part of the CHARISMA Work Package 4
+# Version 0.1 (Prototype), Feb 26, 2021
+# All rights reserved. The code may be used for purposes of CHARISMA as defined in the Consortium Agreement.
+
 # Python libraries
 import matplotlib.pyplot as plt
 import numpy as np
