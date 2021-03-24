@@ -325,7 +325,7 @@ class Chada():
             plt.grid(axis='x', which='both', linestyle=':')
             plt.legend()
         # Return aligned target and shift vector
-        self.transformers.append(['calibrate x', x_pos.tolist(), shifts_pos.tolist()])
+        self.transformers.append(['XCal', x_pos.tolist(), shifts_pos.tolist()])
         self.y_data = aligned_target
         self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
         return
