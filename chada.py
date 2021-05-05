@@ -12,16 +12,20 @@ from scipy.optimize import dual_annealing
 from scipy.sparse.linalg import spsolve
 import os
 import zipfile
+import h5py
+import tempfile
 import time
 import ast
+import re
 from scipy.interpolate import interp1d
 from sklearn.decomposition import NMF
 # Third party spectrum readers 
 from renishawWiRE import WDFReader
 from specio import specread
 
-# 1.	Create CHADA file archive and include a copy of the Native Data file
+
 def create(source_path, target_path = '', transformers = []):
+    # 1.	Create CHADA file archive and include a copy of the Native Data file
     filename, file_extension = os.path.splitext(source_path)
     if target_path == '': target_path = filename + ".cha"
     # Choose matching native file format reader according to filename extension
@@ -36,20 +40,110 @@ def create(source_path, target_path = '', transformers = []):
     static_metadata["Generated on"] = time.ctime()
     static_metadata["Original file"] = os.path.basename(source_path)
     # Check if list of initial transformations has been given by user (e.g. “-b –s –c[310,1890]“ = baseline + smooth + crop Raman Shifts to 310 – 1,890 1/cm).
-    dynamic_metadata = dynamicMetaDataUpdate(x_data, y_data)
+    #dynamic_metadata = dynamicMetaDataUpdate(x_data, y_data)
     commits = ["Generated CHADA on " + time.ctime()]
     zf = zipfile.ZipFile(target_path, mode="w", compression=zipfile.ZIP_DEFLATED)
     zf.write(source_path, os.path.basename(source_path))
     zf.writestr("static_meta.txt", str(static_metadata))
-    zf.writestr("dynamic_meta.txt", str(dynamic_metadata))
+    #zf.writestr("dynamic_meta.txt", str(dynamic_metadata))
     zf.writestr("transformers.txt", str(transformers))
     zf.writestr("commits.txt", str(commits))
     zf.close()
     return
 
-def makeXCalFromSpec(target_file, reference_file, bounds=[-10.,10.]):
+def createHDF5(source_path, target_path = '', transformers = []):
+    # 1.	Create CHADA file archive and include a copy of the Native Data file
+    filename, file_extension = os.path.splitext(source_path)
+    if target_path == '': target_path = filename + ".cha"
+    # Choose matching native file format reader according to filename extension
+    # (.spc, .wdf, .txt, .csv, …), or user specification.
+    reader = getReader(file_extension)
+    # Import Native file using the matching reader included in the CHARISMA software.
+    try:
+        x_data, y_data, metadata = reader(source_path)
+    except Exception as err:
+        raise err
+    # Get rid of bytes that are found in some of the formats
+    metadata = cleanMeta(metadata)
+    # Flatten metadata
+    metadata = dict(zip(metadata.keys(), [str(v) for v in metadata.values()]))
+    # Extract metadata from native metadata and spectrum data, store in metadata dictionary, and include in CHADA archive.
+    metadata["Generated on"] = time.ctime()
+    metadata["Original file"] = os.path.basename(source_path)
+    # Check if list of initial transformations has been given by user (e.g. “-b –s –c[310,1890]“ = baseline + smooth + crop Raman Shifts to 310 – 1,890 1/cm).
+    # ...
+    #dynamic_metadata = dynamicMetaDataUpdate(x_data, y_data)
+    commits = ["Generated CHADA on " + time.ctime()]
+    # Make HDF5 file
+    f = h5py.File(target_path, "w")
+    # Store Raman dataset + label
+    xy = f.create_dataset("Raman data", data=np.vstack((x_data, y_data)))
+    xy.dims[0].label = 'Raman shift [1/cm]'
+    xy.dims[1].label = 'Counts'
+    # Store metadata
+    xy.attrs.update(metadata)
+    #for key in static_metadata: xy.attrs[key] = static_metadata[key]
+    #for key in dynamic_metadata: xy.attrs[key] = dynamic_metadata[key]
+    t = [str(tr) for tr in transformers]
+    dt = h5py.special_dtype(vlen=str)
+    f.create_dataset("Transformers", data=t, dtype=dt)
+    c = [str(co) for co in commits]
+    dt = h5py.special_dtype(vlen=str)
+    f.create_dataset("Commits", data=c, dtype=dt)
+    f.close()
+    return
+
+def cleanMeta(meta):
+    if type(meta) == dict:
+        meta = {i:meta[i] for i in meta if i!=""}
+        for key, value in meta.items():
+            meta[key] = cleanMeta(value)
+    if type(meta) == list:
+        for ii, value in enumerate(meta):
+            meta[ii] = cleanMeta(value)
+    if type(meta) == str:
+        meta = meta.replace('\\x00', '')
+        meta = meta.replace('\x00', '')
+    if type(meta) == bytes:
+        try:
+            meta = meta.decode('utf-8')
+            meta = cleanMeta(meta)
+        except: meta = []
+    return meta
+
+def updateZip(zipname, filename, data):
+    # generate a temp file
+    tmpfd, tmpname = tempfile.mkstemp(dir=os.path.dirname(zipname))
+    os.close(tmpfd)
+    # create a temp copy of the archive without filename            
+    with zipfile.ZipFile(zipname, 'r') as zin:
+        with zipfile.ZipFile(tmpname, 'w') as zout:
+            zout.comment = zin.comment # preserve the comment
+            for item in zin.infolist():
+                if item.filename != filename:
+                    zout.writestr(item, zin.read(item.filename))
+    # replace with the temp archive
+    os.remove(zipname)
+    os.rename(tmpname, zipname)
+    # now add filename with its new data
+    with zipfile.ZipFile(zipname, mode='a', compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(filename, data)
+
+def makeXCalFromSpec(target_file, reference_file, bounds=[-10.,10.], cal_range=[]):
+    # Creates a calibration using two CHADA files: target and refereence.
+    # If later the calibration is applied to the target, is will be aligned to the reference.
     T = Chada(target_file)
     R = Chada(reference_file)
+    if cal_range != []:
+        R.x_crop(cal_range[0], cal_range[1])
+        T.x_crop(cal_range[0], cal_range[1])
+    # Normalize spectra
+    T.normalize()
+    R.normalize()
+    # Determine valid range of calibration (intersection of x axes)
+    cal_upper = np.min([T.x_data.max(), R.x_data.max()])
+    cal_lower = np.max([T.x_data.min(), R.x_data.min()])
+    cal_range = [cal_lower, cal_upper]
     # Get peak positions from target_spectrum
     T.peaks()
     peak_pos = np.array(T.bands['peak pos [1/cm]'])
@@ -61,7 +155,29 @@ def makeXCalFromSpec(target_file, reference_file, bounds=[-10.,10.]):
     lw = [bounds[0]] * len(peak_pos)
     up = [bounds[1]] * len(peak_pos)
     ret = dual_annealing( align_score, bounds=list(zip(lw, up)), args=align_params, seed=1234 )
-    return peak_pos, ret.x
+    # Save calibration as .chacal archive
+    createCalFile(T, target_file, R, reference_file, bounds, peak_pos, ret.x, cal_range)
+    return
+
+def createCalFile(target, target_path, reference, reference_path, bounds, peak_pos,
+                  shifts_at_peaks, cal_range, interpolation_kind='cubic'):
+    # Create.chacal archive
+    metadata = {}
+    metadata["Generated on"] = time.ctime()
+    metadata["Target file"] = target_path
+    metadata["Reference file"] = reference_path
+    metadata["Interpolation kind"] = interpolation_kind
+    metadata["Calibration x range"] = cal_range
+    metadata["No of anchor points"] = len(peak_pos)
+    # Write attributes to .chacal text file archive
+    filename, _ = os.path.splitext(target_path)
+    zf = zipfile.ZipFile(filename + ".chacal", mode="w", compression=zipfile.ZIP_DEFLATED)
+    zf.writestr("peak_pos.txt", str( peak_pos.tolist() ))
+    zf.writestr("shifts_at_peaks.txt", str( shifts_at_peaks.tolist() ))
+    zf.writestr("metadata.txt", str(metadata))
+    zf.close()
+    print("Saved calibration file '" + filename + ".chacal'")
+    return
 
 def align_score(shifts_at_peaks, y, y_ref, x, peak_pos):
     # extrapolate shift vector
@@ -81,6 +197,9 @@ def spec_shift(y0, x0, shifts, show=False):
     return y_shifted
 
 def hqi(y1, y2):
+    # Hit quality index (equivalent to cross-correlation)
+    # See Rodriguez, J.D., et al., Standardization of Raman spectra for transfer of spectral libraries across different
+    # instruments. Analyst, 2011. 136(20): p. 4232-4240.
     return np.linalg.norm(np.dot(y1, y2))**2 / np.linalg.norm(y1)**2 / np.linalg.norm(y2)**2
     
 def readWDF(file):
@@ -109,8 +228,116 @@ def readSPC(file):
     static_metadata = s.meta
     return x_data, y_data, static_metadata
 
-def dynamicMetaDataUpdate(x_data, y_data):
-    dynamic_metadata = {
+def readTXT(file, x_col=0, y_col=0, verbose=True):
+    msg= ""
+    # open .txt and read as lines
+    d = open(file)
+    lines = d.readlines()
+    # Find data lines and convert to np.array
+    start, stop = startStop(lines)
+    msg += "Importing " + str(stop-start+1) + " data lines starting from line " + str(start) + " in " + os.path.basename(file) + ".\n"
+    data_lines = lines[start:stop]
+    data = dataFromTxtLines(data_lines)
+    # if columns not specified, assign x (Raman shift) and y (counts) axes
+    if x_col == y_col == 0:
+        # x axis is the one with mean closest to 1750
+        score = 1./np.abs(data.mean(0)-1750)
+        # x axis must be monotonous!
+        s = np.sign(np.diff(data, axis=0))
+        mono = np.array([np.all(c == c[0]) for c in s.T]) * 1.
+        score *= mono
+        x_col = np.argmax(score)
+        # y axis is the one with maximal std/mean
+        score = np.nan_to_num(data.std(0)/data.mean(0), nan=0)
+        # Do not choose x axis again for y
+        score[x_col] = -1000
+        y_col = np.argmax(score)
+        # if there's mroe than 2 columns and a header line
+        if startStop(lines)[0] > 0 and data.shape[1]>2:
+            msg += "Found more than 2 data columns in " + os.path.basename(file) + ".\n"
+            header_line = lines[startStop(lines)[0]-1].strip('\n')
+            header_line = [s.casefold() for s in re.split(';|,|\t', header_line)]
+            # x axis is header line with "Shift"
+            indices = [i for i, s in enumerate(header_line) if 'shift' in s]
+            if indices != []:
+                x_col = indices[0]
+                msg += "X data: assigning column labelled '" + header_line[x_col] + "'.\n"
+            else: msg += "X data: assigning column # " + str(x_col) + ".\n"
+            # y axis is header line with "Subtracted"
+            indices = [i for i, s in enumerate(header_line) if 'subtracted' in s]
+            if indices != []:
+                y_col = indices[0]
+                msg += "Y data: assigning column labelled '" + header_line[y_col] + "'.\n"
+            else: msg += "Y data: assigning column # " + str(y_col) + ".\n"
+    x, y = data[:,x_col], data[:,y_col]
+    # is x inverted?
+    if all(np.diff(x) <= 0):
+        x = np.flip(x)
+        y = np.flip(y)
+    meta_lines = lines[:startStop(lines)[0]]
+    msg += "Importing " + str(start) + " metadata lines from " + os.path.basename(file) + ".\n"
+    meta_lines = [re.split(';|,|\t|=', l.strip()) for l in meta_lines]
+    ml = {}
+    for l in meta_lines: ml.update({l[0]: l[1:]})
+    # is x axis pixel numbers instead of Raman shifts?
+    if all(np.diff(x) == 1) and (x[0] == 0 or x[0] == 1):
+        if "Start WN" in ml:
+            start_x = np.int(np.array(ml["Start WN"])[0])
+        if "End WN" in ml:
+            stop_x = np.int(np.array(ml["End WN"])[0])
+        x = np.linspace(start_x, stop_x, len(x))
+        msg += "X data: using linspace from " + str(start_x) + " to " + str(stop_x) + " 1/cm.\n"
+    if verbose: print(msg)
+    return x, y, ml
+
+def dataFromTxtLines(data_lines):
+    data = []
+    for ii, l in enumerate(data_lines):
+        l = l.strip('\n').replace("\t", " ")
+        # if line has ";", it is the separator
+        if ";" in l: separator = ";"
+        # if line has "," AND ".", then "," is the separator
+        elif "," in l and "." in l: separator = ","
+        # if line has "," AND " ", then " " is the separator
+        elif "," in l and " " in l: separator = " "
+        # if line has only ",", then "," is the separator
+        elif "," in l: separator = ","
+        # or else it is " "
+        else: separator = " "
+        items = l.split(separator)
+        # convert to float
+        items = [item.replace(",", ".") for item in items]
+        items = [item.replace(" ", "0") for item in items]
+        items = [float(item) for item in items if item != ""]
+        data.append(items)
+    return np.array(data)
+    
+def isDataLine(line):
+    line = line.strip("\n").replace("\t", " ")
+    # is not blank
+    #length = len(line) > 3
+    blank = all([c == " " for c in line])
+    # has more than 75% digits
+    digits = np.sum( [d.isdigit() for d in line] ) / len(line) > .25
+    # apart from digits, has only ".", ";", ",", " "           
+    chars = all([c in '.,;+-eE ' for c in line if not c.isdigit()])
+    return (not blank) & digits & chars
+
+def startStop(lines):
+    start_line, stop_line = 0, 0
+    for ii, line in enumerate(lines):
+        # if this is a data line and the following 5 lines are also data lines, then here is the start line
+        if (len(lines) - ii) > 5 and start_line == 0:
+            if all([isDataLine(l) for l in lines[ii:ii+5]]): start_line = ii
+        # if this is a data line and the following 5 lines are also data lines, then here is the start line
+        if (not isDataLine(line)) and stop_line <= start_line:
+            stop_line = ii
+    if stop_line <= start_line:
+        stop_line = len(lines)-1
+    return start_line, stop_line
+
+def stats(x_data, y_data):
+    stats = {
         "Raman data type": getYDataType(y_data),
         "xy dimensions":  y_data.shape[1:],
         "no. of channels": y_data.shape[0],
@@ -119,14 +346,14 @@ def dynamicMetaDataUpdate(x_data, y_data):
         "mean counts": y_data.mean(),
         "standard deviation": y_data.std(),  
         }
-    return dynamic_metadata
+    return stats
     
 def getYDataType(y_data):
     types = {0: "Single spectrum", 1: "Line scan", 2: "Map", 3: "Map series / volume"}
     return types[len(y_data.shape)-1]
 
 def getReader(file_extension):
-    readers = {'.spc': readSPC, '.wdf': readWDF}
+    readers = {'.spc': readSPC, '.wdf': readWDF, '.txt': readTXT, '.txtr': readTXT, '.csv': readTXT}
     return readers[file_extension]
 
 def lims(Y, x, x_min, x_max):
@@ -136,47 +363,69 @@ def lims(Y, x, x_min, x_max):
 
 # =========================CLASSES===========================================
 class Chada():
-    def __init__(self, chada_path):
+    def __init__(self, chada_path, verbose=True):
         self.path = chada_path
         try:
-            # Open archive
-            zf = zipfile.ZipFile(chada_path)
+#            # Open archive
+#            zf = zipfile.ZipFile(chada_path)
+#            # Load data
+#            self.static_metadata = ast.literal_eval(zf.read("static_meta.txt").decode('utf-8'))
+#            self.dynamic_metadata = ast.literal_eval(zf.read("dynamic_meta.txt").decode('utf-8'))
+#            # self.transformers will be populated upon transformers execution
+#            transformers = ast.literal_eval(zf.read("transformers.txt").decode('utf-8'))
+#            self.commits = ast.literal_eval(zf.read("commits.txt").decode('utf-8'))
+#            # Get native data file name from static_metadata
+#            # Temporarily extract native data file
+#            extract_path = zf.extract(self.static_metadata["Original file"], os.path.dirname(chada_path))
+#            # Import Native file as data using the matching reader included in the CHARISMA software.
+#            _, file_extension = os.path.splitext(extract_path)
+#            reader = getReader(file_extension)
+#            self.x_data_0, self.y_data_0, _ = reader(extract_path)
+#            self.x_data, self.y_data = self.x_data_0.copy(), self.y_data_0.copy()
+#            # Remove temp. file
+#            os.remove(extract_path)
+            # Open HDF5
+            f = h5py.File(chada_path, "r")
             # Load data
-            self.static_metadata = ast.literal_eval(zf.read("static_meta.txt").decode('utf-8'))
-            self.dynamic_metadata = ast.literal_eval(zf.read("dynamic_meta.txt").decode('utf-8'))
-            # self.transformers will be populated upon transformers execution
-            transformers = ast.literal_eval(zf.read("transformers.txt").decode('utf-8'))
-            self.commits = ast.literal_eval(zf.read("commits.txt").decode('utf-8'))
-            # Get native data file name from static_metadata
-            # Temporarily extract native data file
-            extract_path = zf.extract(self.static_metadata["Original file"], os.path.dirname(chada_path))
-            # Import Native file as data using the matching reader included in the CHARISMA software.
-            _, file_extension = os.path.splitext(extract_path)
-            reader = getReader(file_extension)
-            self.x_data_0, self.y_data_0, _ = reader(extract_path)
+            a = f["Raman data"].attrs
+            self.metadata = dict(zip(a.keys(), [str(v) for v in a.values()]))
+            self.x_data_0, self.y_data_0 = f["Raman data"][0], f["Raman data"][1]
             self.x_data, self.y_data = self.x_data_0.copy(), self.y_data_0.copy()
-            # Remove temp. file
-            os.remove(extract_path)
+            transformers = [ast.literal_eval(i.decode('utf-8')) for i in f["Transformers"]]
+            self.commits = [i.decode('utf-8') for i in f["Commits"]]
         except Exception as err:
             raise err
         finally:    
-            zf.close()
+            f.close()
         # self.transformers will be populated upon transformers execution
         self.transformers = []
         for t in transformers:
             # t[0] has transformer function name
             transformer_func = getattr(self, t[0])
+            # if t has parameters, pass them to func
             if len(t) > 1: transformer_func(*t[1:])
             else: transformer_func()
         return
     
     def commit(self, commit = "Updated CHADA on " + time.ctime() ):
         self.commits.append(commit)
-        zf = zipfile.ZipFile(self.path, "a")
-        zf.writestr("dynamic_meta.txt", str(self.dynamic_metadata))
-        zf.writestr("transformers.txt", str(self.transformers))
-        zf.writestr("commits.txt", str(self.commits))
-        zf.close()
+        #updateZip(self.path, "dynamic_meta.txt", str(self.dynamic_metadata))
+        updateZip(self.path, "transformers.txt", str(self.transformers))
+        updateZip(self.path, "commits.txt", str(self.commits))
+        return
+    
+    def commitHDF5(self, commit = "Updated CHADA on " + time.ctime() ):
+        self.commits.append(commit)
+        f = h5py.File(self.path, "r+")
+        # Update dynamic metadata
+        f["Raman data"].attrs.update(self.metadata)
+        #for key in self.metadata:
+        #    f["Raman data"].attrs[key] = self.metadata[key]
+        # replace transformers
+        del f["Transformers"], f["Commits"]
+        f["Transformers"] = [str(tr) for tr in self.transformers]
+        f["Commits"] = [str(co) for co in self.commits]
+        f.close()
         return
     
     def rewind(self, step):
@@ -192,14 +441,16 @@ class Chada():
             if len(t) > 1: transformer_func(*t[1:])
             else: transformer_func()
         # Just in case transformers list is empty
-        self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
+        #self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
         return
     
     #--------------------------UTILITIES------------------------
-    def plot(self, save_fig_name = ""):
+    def plot(self, save_fig_name = "", original=False):
+        if original: x, y = self.x_data_0, self.y_data_0
+        else: x, y = self.x_data, self.y_data
         ylabel = "Intensity"
         fig = plt.figure(figsize=[8,4])
-        plt.plot(self.x_data, self.y_data, 'k-')
+        plt.plot(x, y, 'k-')
         plt.ylabel(ylabel)
         plt.xlabel("Raman shift [rel. 1/cm]")
         plt.grid(axis='x', which='both', linestyle=':')
@@ -252,7 +503,7 @@ class Chada():
         return
     
     # -----------TRANSFORMERS-------------------------------------------------------------
-    def baseline(self, lam=5e5, p=0.001, niter=100, smooth=7, show=False):
+    def fit_baseline(self, lam=1e5, p=0.001, niter=100, smooth=7, show=False):
        # After Eilers, P. H., & Boelens, H. F. (2005). Baseline correction with asymmetric least squares smoothing. Leiden University Medical Centre Report, 1(1), 5.
        # Fits & returns a background model
        b = self.y_data.copy()
@@ -266,39 +517,77 @@ class Chada():
            Z = W + lam * D.dot(D.transpose())
            z = spsolve(Z, w*y)
            w = p * (y > z) + (1-p) * (y < z)
-       b = z
-       self.transformers.append([ 'baselineT', b.tolist() ])
-       self.y_data -= b
-       self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
+       self.baseline = z
+       #self.transformers.append([ 'remove_baseline', self.baseline.tolist() ])
+       #self.y_data -= b
+       #self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
        if show:
            ylabel = "Intensity"
            plt.figure(figsize=[8,4])
-           plt.plot(self.x_data, self.y_data + b, 'k')
-           plt.plot(self.x_data, b, 'r')
+           plt.plot(self.x_data, self.y_data, 'k')
+           plt.plot(self.x_data, self.baseline, 'r')
            plt.ylabel(ylabel)
            plt.xlabel("Raman shift [rel. 1/cm]")
            plt.grid(axis='x', which='both', linestyle=':')
-           #plt.yticks([])
        return
    
-    def baselineT(self, b):
-        b = np.array(b)
-        self.y_data -= b
-        self.transformers.append([ 'baselineT', b.tolist() ])
+    def remove_baseline(self, b=[]):
+        if b != []: self.baseline = np.array(b)
+        self.y_data -= self.baseline
+        self.transformers.append([ 'remove_baseline', self.baseline.tolist() ])
         return
 
     def x_crop(self, k_min=300, k_max=1800):
         self.transformers.append(['x_crop', k_min, k_max])
         self.y_data = lims(self.y_data, self.x_data, k_min, k_max)
         self.x_data = lims(self.x_data, self.x_data, k_min, k_max)
-        self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
+        #self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
         return
     
     def normalize(self, norm_type = 'area'):
         self.transformers.append(['normalize', norm_type])
         self.y_data -= self.y_data.min(axis=0)
         self.y_data /= np.mean(self.y_data, axis=0)
-        self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
+        #self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
+        return
+    
+    def XCalFromFile(self, calibration_file, show=False):
+        try:
+            # Open archive
+            zf = zipfile.ZipFile(calibration_file)
+            # Load data
+            x_pos = ast.literal_eval(zf.read("peak_pos.txt").decode('utf-8'))
+            shifts_pos = ast.literal_eval(zf.read("shifts_at_peaks.txt").decode('utf-8'))
+        except Exception as err:
+            raise err
+        finally:    
+            zf.close()
+        x_pos, shifts_pos = np.array(x_pos), np.array(shifts_pos)
+        # Calulate shift vector
+        f_inter = interp1d(x_pos, shifts_pos, kind="cubic", bounds_error=False, fill_value=0)
+        shifts_vector = f_inter(self.x_data)
+        aligned_target = spec_shift(self.y_data, self.x_data, shifts_vector)
+        bounds = [shifts_vector.min(), shifts_vector.max()]
+        if show:
+            plt.figure(figsize=[8,4])
+            plt.plot(self.x_data, shifts_vector)
+            plt.plot(x_pos, shifts_pos, 'o')
+            plt.ylim(bounds)
+            plt.xlabel("Raman shift [rel. 1/cm]")
+            plt.ylabel("wavenumber shift [rel. 1/cm]")
+            plt.grid(linestyle=':')
+            plt.show()
+            plt.figure(figsize=[8,4])
+            plt.plot(self.x_data, self.y_data, label='target')
+            plt.plot(self.x_data, aligned_target, label='aligned target')
+            plt.xlabel("Raman shift [rel. 1/cm]")
+            plt.yticks([])
+            plt.grid(axis='x', which='both', linestyle=':')
+            plt.legend()
+        # Return aligned target and shift vector
+        self.transformers.append(['XCal', x_pos.tolist(), shifts_pos.tolist()])
+        self.y_data = aligned_target
+        #self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
         return
     
     def XCal(self, x_pos, shifts_pos, show=False):
@@ -327,7 +616,7 @@ class Chada():
         # Return aligned target and shift vector
         self.transformers.append(['XCal', x_pos.tolist(), shifts_pos.tolist()])
         self.y_data = aligned_target
-        self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
+        #self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
         return
     
     def shiftX(self, shifts, show=False):
@@ -344,7 +633,7 @@ class Chada():
             plt.grid(axis='x', which='both', linestyle=':')
         self.transformers.append(['shiftX', shifts.tolist()])
         self.y_data = y_shifted
-        self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
+        #self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
         return
 
 
@@ -360,13 +649,14 @@ class ChadaGroup():
             G = Chada(file)
             X.append(G.x_data)
             Y.append(G.y_data)
-            x_increment = np.abs(np.diff(G.x_data)).min()
+            #x_increment = np.abs(np.diff(G.x_data)).min()
             x_min, x_max = G.x_data.min(), G.x_data.max()
             x_min_all = np.max([x_min_all, x_min])
             x_max_all = np.min([x_max_all, x_max])
-            x_increment_all = np.min([x_increment_all, x_increment])
+            #x_increment_all = np.min([x_increment_all, x_increment])
             del G
             self.labels.append(os.path.basename(file))
+        x_increment_all = 1
         self.x_data = np.arange(x_min_all, x_max_all, x_increment_all)
         interpolated_Y = []
         for x, y in zip(X,Y):
