@@ -11,15 +11,14 @@ import os
 import time
 import zipfile
 
-from ramanchada import chada_utilities 
+from ramanchada import chada,chada_utilities 
 
-from chada import Chada
 
 def makeXCalFromSpec(target_file, reference_file, bounds=[-10.,10.], cal_range=[]):
     # Creates a calibration using two CHADA files: target and refereence.
     # If later the calibration is applied to the target, is will be aligned to the reference.
-    T = Chada(target_file)
-    R = Chada(reference_file)
+    T = chada.Chada(target_file)
+    R = chada.Chada(reference_file)
     if cal_range != []:
         R.x_crop(cal_range[0], cal_range[1])
         T.x_crop(cal_range[0], cal_range[1])
