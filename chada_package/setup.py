@@ -33,6 +33,8 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     keywords="Raman spectra standardisation",
+    package_dir={"": "src"},
+    packages=setuptools.find_packages(where="src"),
     python_requires="~=3.5",
     packages=[
         "ramanchada",
