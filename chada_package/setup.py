@@ -6,7 +6,7 @@ with open("README.md", "r") as fs:
     long_description = fs.read()
 
 setup(
-    name="raman-chada",
+    name="ramanchada",
     version="0.0.1",
     author="Bastian Barton",
     author_email="bastian.Barton@lbf.fraunhofer.de",
@@ -35,11 +35,10 @@ setup(
     keywords="Raman spectra standardisation",
     python_requires="~=3.5",
     packages=[
-        "pynanomapper",
+        "ramanchada",
     ],
     install_requires=[
-        "jproperties",
         "pandas",
-        "pyyaml"
+        "scipy"
     ],
 )
