@@ -11,8 +11,7 @@ from scipy.signal import wiener
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
 
-sys.path.append(r'/data io')
-from chada_io import getYDataType
+from ramanchada import chada_io 
 
 def plotData(x_data, y_data, labels, ylabel = "Intensity", save_fig_name = "", leg=True):
     fig = plt.figure(figsize=[8,4])
@@ -45,7 +44,7 @@ def spec_shift(y0, x0, shifts, show=False):
 
 def stats(x_data, y_data):
     stats = {
-        "Raman data type": getYDataType(y_data),
+        "Raman data type": chada_io.getYDataType(y_data),
         "xy dimensions":  y_data.shape[1:],
         "no. of channels": y_data.shape[0],
         "minimum wavelength": x_data.min(),

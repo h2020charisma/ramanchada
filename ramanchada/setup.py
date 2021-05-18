@@ -38,6 +38,9 @@ setup(
     python_requires="~=3.5",
     install_requires=[
         "pandas",
-        "scipy"
+        "scipy",
+        "h5py",
+        "specio",
+        "renishawWiRE"
     ]
 )
