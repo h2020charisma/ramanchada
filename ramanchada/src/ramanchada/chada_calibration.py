@@ -11,8 +11,7 @@ import os
 import time
 import zipfile
 
-sys.path.append(r'/utilities')
-from chada_utilities import spec_shift
+from ramanchada import chada_utilities 
 
 from chada import Chada
 
@@ -71,7 +70,7 @@ def align_score(shifts_at_peaks, y, y_ref, x, peak_pos):
     f_inter = interp1d(peak_pos, shifts_at_peaks, kind="cubic", bounds_error=False, fill_value="extrapolate")
     shifts = f_inter(x)
     # calculate HQI of shifted spectrum and ref
-    return 1. / hqi(y_ref, spec_shift(y, x, shifts))
+    return 1. / hqi(y_ref, chada_utilities.spec_shift(y, x, shifts))
 
 def hqi(y1, y2):
     # Hit quality index (equivalent to cross-correlation)
