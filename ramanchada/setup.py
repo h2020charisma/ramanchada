@@ -37,10 +37,11 @@ setup(
     packages=find_packages(where="src"),
     python_requires="~=3.5",
     install_requires=[
-        "pandas",
-        "scipy",
         "h5py",
-        "specio",
-        "renishawWiRE"
+        "pandas",
+        "renishawWiRE",
+        "scipy",
+        "spc @ git+https://github.com/glemaitre/spc.git",
+        "specio @ git+https://github.com/paris-saclay-cds/specio.git",
     ]
 )
