@@ -66,3 +66,42 @@ def baseline(y, lam=1e5, p=0.001, niter=100, smooth=7):
            z = spsolve(Z, w*y)
            w = p * (y > z) + (1-p) * (y < z)
        return z
+   
+def interpolatePeakFFT(x, y0, pad=2000, show=False, d=100):
+    # Normalize
+    y = y0 - np.min(y0)
+    y /= np.max(y)
+    min_x, max_x = x.min(), x.max()
+    # Even length is bad for FFT centering.
+    if len(x)%2 == 0:
+         # Truncate
+         y = y[:-1]
+         x = x[:-1]
+    ## Tranform intensities into fourier domain
+    y_f = np.fft.fft(y)
+    # Pad middle (large periodicities) with zeros
+    mid_pos = len(y_f)//2+2
+    zeropad = np.zeros(pad)
+    ext_y_f = np.hstack((y_f[:mid_pos], zeropad, y_f[mid_pos:]))
+    ## Inverse FFT & normalize
+    y_if = np.real(np.fft.ifft(ext_y_f))
+    y_if -= np.min(y_if)
+    y_if /= np.max(y_if)
+    ## Create new x-axis
+    #min_x, max_x = x.min(), x.max()
+    ext_x = np.linspace(min_x, max_x, len(y_if))
+    x1 = ext_x[np.argmax(y_if)-d:np.argmax(y_if)+d]
+    y1 = y_if[np.argmax(y_if)-d:np.argmax(y_if)+d]
+    z = np.polyfit(x1, y1, 2)
+    p = np.poly1d(z)
+    if show:
+        plt.figure(figsize=[8,4])
+        plt.plot(x, y, label='original data')
+        plt.plot(ext_x, y_if, 'k:', label='resampled')
+        plt.plot(x1, p(x1), 'r-', label='poly2 fit')
+        plt.ylabel("Norm. intensity")
+        plt.xlabel("Raman shift [rel. 1/cm]")
+        plt.grid(axis='x', which='both', linestyle=':')
+        plt.legend()
+        plt.show()
+    return x1[np.argmax(p(x1))]

@@ -8,9 +8,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.signal import wiener, savgol_filter, find_peaks
-from scipy import sparse
-from scipy.sparse.linalg import spsolve
+from scipy.signal import savgol_filter, find_peaks
 import os
 import sys
 import zipfile
@@ -21,7 +19,7 @@ from scipy.interpolate import interp1d
 from sklearn.decomposition import NMF
 
 sys.path.append(r'/utilities')
-from chada_utilities import lims, plotData, stats, spec_shift, baseline
+from chada_utilities import lims, plotData, stats, spec_shift, baseline, interpolatePeakFFT
 
 # =========================CLASSES===========================================
 class Chada():
@@ -106,45 +104,53 @@ class Chada():
             print(s)
         return
 
-    def peaks(self, make_plot = False):
-        s = savgol_filter(self.y_data, 3, 2)
+    def peaks(self, fit = True, sort_by = 'prominence', make_plot = False, d=200, fit_plot = False):
+        x = self.x_data.copy()
+        y = self.y_data.copy()
+        s = savgol_filter(y, 3, 2)
         s -= s.min()
         s /= s.max()
-        p = find_peaks(s,
+        peaks = find_peaks(s,
             height=.1,
             threshold=None,
             distance=2,
             prominence=.05,
-            width=None,
+            width=1,
             wlen=None,
-            rel_height=0.1,
+            rel_height=0.5,
             plateau_size=None)
-        P = pd.DataFrame(p[1])
-        P["peak pos [1/cm]"] = self.x_data[p[0]]
-        cols = P.columns.tolist()
-        cols = [cols[-1], cols[0], cols[1], cols[2], cols[3]]
-        P = P.reindex(columns=cols)
-        P["left_bases"] = self.x_data[P["left_bases"]]
-        P["right_bases"] = self.x_data[P["right_bases"]]
-        self.bands = P
+        P = pd.DataFrame()
+        P['position'] = x[peaks[0]]
+        P['prominence'] = peaks[1]['prominences']
+        P['FWHM'] = peaks[1]['widths']*((x.max() - x.min())/len(x))
+        if fit:
+            x_max = []
+            for x0, w in zip(peaks[0], peaks[1]['widths']):
+                x1, x2 = np.max([0, int(x0-1.*w)]), np.min([int(x0+1.*w)+1, len(x)-1])
+                x_max.append(interpolatePeakFFT(x[x1:x2], s[x1:x2], d=d, show=fit_plot))
+            P['fitted pos.'] = x_max
+        self.bands = P.sort_values(by=[sort_by], ascending=False)
         if make_plot:
             ylabel = "Intensity"
             fig, ax = plt.subplots(figsize=[8,4])
-            plt.plot(self.x_data, self.y_data, 'k-')
-            for pos in p[0]:
-                k_pos = self.x_data[pos]
-                band_y = self.y_data[pos]
-                ax.annotate(str(int(k_pos)), xy=(k_pos, band_y + self.y_data.max()*.01),  xycoords='data',
-                            xytext=(k_pos, band_y + self.y_data.max()*.1), textcoords='data',
+            plt.plot(x, y, 'k-')
+            x1, x2 = np.array(peaks[1]['left_ips']).astype(int), np.array(peaks[1]['right_ips']).astype(int)
+            plt.hlines(y[peaks[0]]*.5, x[x1+1], x[x2+1],
+                       color='k', linestyle=':')
+            for p in peaks[0]:
+                k_pos = x[p]
+                band_y = y[p]
+                ax.annotate(str(int(k_pos)), xy=(k_pos, band_y + y.max()*.01),  xycoords='data',
+                            xytext=(k_pos, band_y + y.max()*.1), textcoords='data',
                             arrowprops=dict(facecolor='black', shrink=0.05, width=2,headwidth=5),
                             horizontalalignment='center', verticalalignment='bottom', size=10
                             )
-            plt.ylim(-.05, self.y_data.max()+ self.y_data.max()*.2)
+            plt.ylim(-.05, y.max()+ y.max()*.2)
             plt.xlabel('Raman shift [1/cm]')
             plt.ylabel(ylabel)
             plt.grid(axis='x', which='both', linestyle=':')
-            #plt.yticks([])
             plt.show()
+        print(self.bands)
         return
     
     # -----------TRANSFORMERS-------------------------------------------------------------
