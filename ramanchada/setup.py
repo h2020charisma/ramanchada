@@ -16,8 +16,8 @@ setup(
     url="https://gitlab.cc-asp.fraunhofer.de/",
     project_urls={
         "Issue tracker": "tbd",
-        "Project" : "https://www.h2020charisma.eu/project-overview",
-        "Source" : "https://gitlab.cc-asp.fraunhofer.de/"
+        "Project": "https://www.h2020charisma.eu/project-overview",
+        "Source": "https://gitlab.cc-asp.fraunhofer.de/",
     },
     classifiers=[
         "Environment :: Web Environment",
@@ -43,5 +43,5 @@ setup(
         "scipy",
         "spc @ git+https://github.com/glemaitre/spc.git",
         "specio @ git+https://github.com/paris-saclay-cds/specio.git",
-    ]
+    ],
 )
