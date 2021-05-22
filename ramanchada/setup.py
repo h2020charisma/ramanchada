@@ -37,6 +37,8 @@ setup(
     packages=find_packages(where="src"),
     python_requires="~=3.5",
     install_requires=[
+        "matplotlib",
+        "sklearn",
         "h5py",
         "pandas",
         "renishawWiRE",
