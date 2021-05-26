@@ -8,6 +8,15 @@
 ### What is CHADA ?
 - _**CHA**racterization **DA**ta_
 
+### ramanchada package
+
+You have to install ramanchada package before using the notebooks - see `ramanchada/README.md` 
+
+```
+cd ramanchada
+pip install --user -e .
+```
+
 ### Relevant use cases: what will CHADA be used for ?
 [List of CHADA use cases](documents/Use cases CHADA.xlsx): _This is a living document - please add to it! Download, then `replace` by the changed doc._
 * Use cases implemented in the current version of the CHADA library
