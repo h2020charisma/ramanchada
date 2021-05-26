@@ -336,7 +336,7 @@ class ChadaGroup():
             D.append( y - self.y_data[ref,...] )
         self.y_differences = np.array(D)
         if show:
-            plotData(self.x_data, self.y_differences, self.labels)
+            chada_utilities.plotData(self.x_data, self.y_differences, self.labels)
         return
     
     def normalize(self, normalization_type = 'area'):
