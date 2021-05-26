@@ -244,7 +244,7 @@ class Chada():
         # Calulate shift vector
         f_inter = interp1d(x_pos, shifts_pos, kind="cubic", bounds_error=False, fill_value=0)
         shifts_vector = f_inter(self.x_data)
-        aligned_target = spec_shift(self.y_data, self.x_data, shifts_vector)
+        aligned_target = chada_utilities.spec_shift(self.y_data, self.x_data, shifts_vector)
         bounds = [shifts_vector.min(), shifts_vector.max()]
         if show:
             plt.figure(figsize=[8,4])

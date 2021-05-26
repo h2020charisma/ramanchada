@@ -41,8 +41,8 @@ def makeXCalFromSpec(target_file, reference_file, bounds=[-10.,10.], cal_range=[
     up = [bounds[1]] * len(peak_pos)
     ret = dual_annealing( align_score, bounds=list(zip(lw, up)), args=align_params, seed=1234 )
     # Save calibration as .chacal archive
-    createCalFile(T, target_file, R, reference_file, bounds, peak_pos, ret.x, cal_range)
-    return
+    file_chacal = createCalFile(T, target_file, R, reference_file, bounds, peak_pos, ret.x, cal_range)
+    return peak_pos, ret.x, file_chacal
 
 def createCalFile(target, target_path, reference, reference_path, bounds, peak_pos,
                   shifts_at_peaks, cal_range, interpolation_kind='cubic'):
@@ -62,7 +62,7 @@ def createCalFile(target, target_path, reference, reference_path, bounds, peak_p
     zf.writestr("metadata.txt", str(metadata))
     zf.close()
     print("Saved calibration file '" + filename + ".chacal'")
-    return
+    return filename + ".chacal"
 
 def align_score(shifts_at_peaks, y, y_ref, x, peak_pos):
     # extrapolate shift vector
