@@ -2,6 +2,9 @@
 A tool for harmonisation of Raman spectral data by characteristic data (CHADA)
 
 # Quick start
+_**IMPORTANT:** These instructions explain how to use the `ramanchada` Python module in general. If you are interested
+in testing the Jupyter notebooks in the top level directory, please see the `README.md` file there._
+
 Ramanchada and some of its external dependencies are not (yet) available as PyPI or Anaconda packages, so, currently,
 the recommended method of installation is directly from the Git repo. Only `pip` is supported:
 
