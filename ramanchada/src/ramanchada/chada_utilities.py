@@ -55,17 +55,17 @@ def stats(x_data, y_data):
     return stats
 
 def baseline(y, lam=1e5, p=0.001, niter=100, smooth=7):
-       if smooth > 0: y = wiener(y, smooth)
-       L = len(y)
-       D = sparse.csc_matrix(np.diff(np.eye(L), 2))
-       w = np.ones(L)
-       for i in range(niter):
-           W = sparse.spdiags(w, 0, L, L)
-           Z = W + lam * D.dot(D.transpose())
-           z = spsolve(Z, w*y)
-           w = p * (y > z) + (1-p) * (y < z)
-       return z
-   
+    if smooth > 0: y = wiener(y, smooth)
+    L = len(y)
+    D = sparse.csc_matrix(np.diff(np.eye(L), 2))
+    w = np.ones(L)
+    for i in range(niter):
+        W = sparse.spdiags(w, 0, L, L)
+        Z = W + lam * D.dot(D.transpose())
+        z = spsolve(Z, w*y)
+        w = p * (y > z) + (1-p) * (y < z)
+    return z
+
 def interpolatePeakFFT(x, y0, pad=2000, show=False, d=100):
     # Normalize
     y = y0 - np.min(y0)
