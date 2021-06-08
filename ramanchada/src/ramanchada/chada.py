@@ -127,7 +127,7 @@ class Chada():
             x_max = []
             for x0, w in zip(peaks[0], peaks[1]['widths']):
                 x1, x2 = np.max([0, int(x0-1.*w)]), np.min([int(x0+1.*w)+1, len(x)-1])
-                x_max.append(interpolatePeakFFT(x[x1:x2], s[x1:x2], d=d, show=fit_plot))
+                x_max.append(chada_utilities.interpolatePeakFFT(x[x1:x2], s[x1:x2], d=d, show=fit_plot))
             P['fitted pos.'] = x_max
         self.bands = P.sort_values(by=[sort_by], ascending=False)
         if make_plot:
