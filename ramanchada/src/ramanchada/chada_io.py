@@ -12,6 +12,7 @@ import zipfile
 # Third party spectrum readers 
 from renishawWiRE import WDFReader
 from specio import specread
+import spectrochempy as scp
 
 
 def create(source_path, target_path = '', transformers = []):
@@ -112,6 +113,47 @@ def readSPC(file):
         x_data = np.flip(x_data)
     static_metadata = s.meta
     return x_data, y_data, static_metadata
+
+def readSPA(file):
+    s = scp.read(file)
+    m = s.description.split('\n')
+    meta_dict = dict([mm.strip('##').split(':') for mm in m])
+    return np.array(s.x.values), s.data[0], meta_dict
+
+def read_JCAMP(file, verbose=True):
+    x = []
+    y = []
+    # open .txt and read as lines
+    with open(file) as d:
+        lines = d.readlines()
+    end_index = [i for i, s in enumerate(lines) if 'END' in s][-1]
+    lines = lines[:end_index]
+    # ## Marks meta data
+    meta_lines = [l for l in lines if l.startswith('##')][:-1]
+    meta = dict([mm.strip('##').strip('\n').split('=') for mm in meta_lines])
+    data_lines = [l for l in lines if not l.startswith('##')]
+    # read up to second last line
+    for l in data_lines[:-1]:
+        # split line into individual numbers
+        items = l.strip('\n').strip().split()
+        # 1st is x, the rest is y values
+        x.append(float(items[0]))
+        [y.append(float(item)) for item in items[1:]]
+    # convert to np.array
+    # calc num of y per x
+    y_per_x = len(y)//len(x)
+    x_increment = np.mean(np.diff(np.array(x))) / y_per_x
+    new_x = []
+    for xx in x:
+        for ii in range(y_per_x):
+            new_x.append(xx + x_increment*ii)
+    # Read last line (may not be complete)
+    items = data_lines[-1].strip('\n').strip().split()
+    for ii, item in enumerate(items[1:]):
+        # 1st is x, the rest is y values
+        new_x.append(float(items[0]) + x_increment*ii)
+        y.append(float(item))
+    return np.array(new_x), np.array(y), meta
 
 # =================Text and CSV import=====================================
 
@@ -232,10 +274,11 @@ def getYDataType(y_data):
 
 def getReader(file_extension):
     readers = {'.spc': readSPC, '.sp': readSPC,
+               '.spa': readSPA, '.0': readSPA, '.1': readSPA, '.2': readSPA,
                '.wdf': readWDF,
-               '.txt': readTXT, '.txtr': readTXT, '.csv': readTXT}
-    return readers[file_extension]
-
+               '.jdx': read_JCAMP, '.dx': read_JCAMP,
+               '.txt': readTXT,'.txtr': readTXT, '.csv': readTXT, '.prn': readTXT}
+    return readers.get(file_extension, readTXT)
 
 def createZIP(source_path, target_path = '', transformers = []):
     # 1.	Create CHADA file archive and include a copy of the Native Data file
