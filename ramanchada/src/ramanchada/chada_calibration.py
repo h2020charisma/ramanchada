@@ -31,8 +31,7 @@ def makeXCalFromSpec(target_file, reference_file, bounds=[-10.,10.], cal_range=[
     cal_range = [cal_lower, cal_upper]
     # Get peak positions from target_spectrum
     T.peaks()
-    # peak_pos = np.array(T.bands['peak pos [1/cm]'])
-    peak_pos = np.array(T.bands['position'])
+    peak_pos = np.array(T.bands['peak pos [1/cm]'])
     # interpolate reference to target x_data 
     f_inter = interp1d(R.x_data, R.y_data, kind="cubic", bounds_error=False, fill_value=0)
     reference = f_inter(T.x_data)
