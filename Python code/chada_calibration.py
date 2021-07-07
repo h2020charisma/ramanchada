@@ -11,14 +11,16 @@ import os
 import time
 import zipfile
 
-from ramanchada import chada,chada_utilities 
+sys.path.append(r'/utilities')
+from chada_utilities import spec_shift
 
+from chada import Chada
 
 def makeXCalFromSpec(target_file, reference_file, bounds=[-10.,10.], cal_range=[]):
     # Creates a calibration using two CHADA files: target and refereence.
     # If later the calibration is applied to the target, is will be aligned to the reference.
-    T = chada.Chada(target_file)
-    R = chada.Chada(reference_file)
+    T = Chada(target_file)
+    R = Chada(reference_file)
     if cal_range != []:
         R.x_crop(cal_range[0], cal_range[1])
         T.x_crop(cal_range[0], cal_range[1])
@@ -41,8 +43,8 @@ def makeXCalFromSpec(target_file, reference_file, bounds=[-10.,10.], cal_range=[
     up = [bounds[1]] * len(peak_pos)
     ret = dual_annealing( align_score, bounds=list(zip(lw, up)), args=align_params, seed=1234 )
     # Save calibration as .chacal archive
-    file_chacal = createCalFile(T, target_file, R, reference_file, bounds, peak_pos, ret.x, cal_range)
-    return peak_pos, ret.x, file_chacal
+    createCalFile(T, target_file, R, reference_file, bounds, peak_pos, ret.x, cal_range)
+    return
 
 def createCalFile(target, target_path, reference, reference_path, bounds, peak_pos,
                   shifts_at_peaks, cal_range, interpolation_kind='cubic'):
@@ -62,14 +64,14 @@ def createCalFile(target, target_path, reference, reference_path, bounds, peak_p
     zf.writestr("metadata.txt", str(metadata))
     zf.close()
     print("Saved calibration file '" + filename + ".chacal'")
-    return filename + ".chacal"
+    return
 
 def align_score(shifts_at_peaks, y, y_ref, x, peak_pos):
     # extrapolate shift vector
     f_inter = interp1d(peak_pos, shifts_at_peaks, kind="cubic", bounds_error=False, fill_value="extrapolate")
     shifts = f_inter(x)
     # calculate HQI of shifted spectrum and ref
-    return 1. / hqi(y_ref, chada_utilities.spec_shift(y, x, shifts))
+    return 1. / hqi(y_ref, spec_shift(y, x, shifts))
 
 def hqi(y1, y2):
     # Hit quality index (equivalent to cross-correlation)

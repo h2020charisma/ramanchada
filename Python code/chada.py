@@ -18,8 +18,8 @@ import ast
 from scipy.interpolate import interp1d
 from sklearn.decomposition import NMF
 
-from ramanchada import chada_utilities
-#import lims, plotData, stats, spec_shift, baseline
+sys.path.append(r'/utilities')
+from chada_utilities import lims, plotData, stats, spec_shift, baseline, interpolatePeakFFT
 
 # =========================CLASSES===========================================
 class Chada():
@@ -97,7 +97,7 @@ class Chada():
         return
     
     def statistics(self, original=False):
-        s = pd.Series( chada_utilities.stats (self.x_data, self.y_data) )
+        s = pd.Series( stats (self.x_data, self.y_data) )
         print(s)
         if original:
             s = pd.Series( stats (self.x_data_0, self.y_data_0) )
@@ -127,7 +127,7 @@ class Chada():
             x_max = []
             for x0, w in zip(peaks[0], peaks[1]['widths']):
                 x1, x2 = np.max([0, int(x0-1.*w)]), np.min([int(x0+1.*w)+1, len(x)-1])
-                x_max.append(chada_utilities.interpolatePeakFFT(x[x1:x2], s[x1:x2], d=d, show=fit_plot))
+                x_max.append(interpolatePeakFFT(x[x1:x2], s[x1:x2], d=d, show=fit_plot))
             P['fitted pos.'] = x_max
         self.bands = P.sort_values(by=[sort_by], ascending=False)
         if make_plot:
@@ -157,7 +157,7 @@ class Chada():
     def fit_baseline(self, lam=1e5, p=0.001, niter=100, smooth=7, show=False):
        # After Eilers, P. H., & Boelens, H. F. (2005). Baseline correction with asymmetric least squares smoothing. Leiden University Medical Centre Report, 1(1), 5.
        # Fits & returns a background model
-       self.baseline = chada_utilities.baseline(self.y_data,lam=lam,p=p,niter=niter,smooth=smooth)
+       self.baseline = baseline(self.y_data,lam=lam,p=p,niter=niter,smooth=smooth)
 #       y = self.y_data.copy()
 #       if smooth > 0: y = wiener(y, smooth)
 #       L = len(y)
@@ -187,8 +187,8 @@ class Chada():
 
     def x_crop(self, k_min=300, k_max=1800):
         self.transformers.append(['x_crop', k_min, k_max])
-        self.y_data = chada_utilities.lims(self.y_data, self.x_data, k_min, k_max)
-        self.x_data = chada_utilities.lims(self.x_data, self.x_data, k_min, k_max)
+        self.y_data = lims(self.y_data, self.x_data, k_min, k_max)
+        self.x_data = lims(self.x_data, self.x_data, k_min, k_max)
         #self.dynamic_metadata = dynamicMetaDataUpdate(self.x_data, self.y_data)
         return
     
@@ -215,7 +215,7 @@ class Chada():
         # Calulate shift vector
         f_inter = interp1d(x_pos, shifts_pos, kind="cubic", bounds_error=False, fill_value=0)
         shifts_vector = f_inter(self.x_data)
-        aligned_target = chada_utilities.spec_shift(self.y_data, self.x_data, shifts_vector)
+        aligned_target = spec_shift(self.y_data, self.x_data, shifts_vector)
         bounds = [shifts_vector.min(), shifts_vector.max()]
         if show:
             plt.figure(figsize=[8,4])
@@ -244,7 +244,7 @@ class Chada():
         # Calulate shift vector
         f_inter = interp1d(x_pos, shifts_pos, kind="cubic", bounds_error=False, fill_value=0)
         shifts_vector = f_inter(self.x_data)
-        aligned_target = chada_utilities.spec_shift(self.y_data, self.x_data, shifts_vector)
+        aligned_target = spec_shift(self.y_data, self.x_data, shifts_vector)
         bounds = [shifts_vector.min(), shifts_vector.max()]
         if show:
             plt.figure(figsize=[8,4])
@@ -327,7 +327,7 @@ class ChadaGroup():
         return
     
     def plot(self, save_fig_name = "", leg=True):
-        chada_utilities.plotData(self.x_data, self.y_data, self.labels)
+        plotData(self.x_data, self.y_data, self.labels)
         return
     
     def distance(self, ref=0, show=True):
@@ -336,7 +336,7 @@ class ChadaGroup():
             D.append( y - self.y_data[ref,...] )
         self.y_differences = np.array(D)
         if show:
-            chada_utilities.plotData(self.x_data, self.y_differences, self.labels)
+            plotData(self.x_data, self.y_differences, self.labels)
         return
     
     def normalize(self, normalization_type = 'area'):
@@ -348,14 +348,14 @@ class ChadaGroup():
     
     def base(self, lam=1e5, p=0.001, niter=100, smooth=7, show=False):
         for ii, y in enumerate(self.y_data):
-            self.y_data[ii,:] -= chada_utilities.baseline(y, lam=lam, p=p, niter=niter, smooth=smooth)
+            self.y_data[ii,:] -= baseline(y, lam=lam, p=p, niter=niter, smooth=smooth)
         if show:
             self.plot()
         return
     
     def x_crop(self, k_min=0, k_max=4000):
-        self.y_data = chada_utilities.lims(self.y_data, self.x_data, k_min, k_max)
-        self.x_data = chada_utilities.lims(self.x_data, self.x_data, k_min, k_max)
+        self.y_data = lims(self.y_data, self.x_data, k_min, k_max)
+        self.x_data = lims(self.x_data, self.x_data, k_min, k_max)
         return
     
     def nmf(self, n_components):

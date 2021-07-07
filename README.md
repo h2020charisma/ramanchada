@@ -2,54 +2,11 @@
 
 ## _This is the GIT development platform for algorithms that generate CHADA (characteristic data) from a given Raman spectrum. It refers to CHARISMA Work Package 4._
 
-### Quick Start for users
-
-#### Pip
-
-***NOTE:** It is usually a good idea to use a [virtual environment](https://docs.python.org/3/tutorial/venv.html).*
-```
-pip install -r requirements.txt
-jupyter notebook
-```
-
-#### Conda
-[Install Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html), then run the following:
-```
-conda env update -f environment.yml
-conda activate ramanchada
-jupyter notebook
-```
-
-#### Docker (on Linux)
-
-***WARNING:** This will produce files in the `test` directory that will be owned by root. To fix it, do `sudo rm -r test`,
-followed by `git checkout -- test`. An enhanced procedure without this problem may be introduced in the future.*
-
-[Install Docker](https://docs.docker.com/get-docker/), then run the following:
-```
-docker pull python
-docker run -it --rm -p 8888:8888 -v "${PWD}":/work python /bin/bash
-```
-In the container, run:
-```
-cd work
-pip install -r requirements.txt
-jupyter notebook --ip 0.0.0.0 --allow-root --no-browser
-```
-
-### Quick Start for contributors
-
-Please see the [Contributor Guide](CONTRIBUTING.md).
-
 ### What is the CHARISMA Project ?
 - Visit the [CHARISMA Home Page](https://www.h2020charisma.eu/) !
 
 ### What is CHADA ?
 - _**CHA**racterization **DA**ta_
-
-### ramanchada package
-
-You have to install ramanchada package before using the notebooks - see _Quick Start_ above.
 
 ### Relevant use cases: what will CHADA be used for ?
 [List of CHADA use cases](documents/Use cases CHADA.xlsx): _This is a living document - please add to it! Download, then `replace` by the changed doc._
@@ -84,4 +41,4 @@ You have to install ramanchada package before using the notebooks - see _Quick S
 - Affine transforms: https://scipy-lectures.org/packages/scikit-image/auto_examples/plot_features.html
 - _Rascal_ Python library for automated spectrometer wavelength calibration: https://pypi.org/project/rascal/, https://arxiv.org/abs/1912.05883
 - _xcal_raman_ Python functions for wavenumber calibration of Raman spectrometers: https://pypi.org/project/xcal_raman/
-- _Scikit-spectra_: Explorative Spectroscopy in Python: https://openresearchsoftware.metajnl.com/articles/10.5334/jors.bs/
+- _Scikit-spectra_: Explorative Spectroscopy in Python: https://openresearchsoftware.metajnl.com/articles/10.5334/jors.bs/   

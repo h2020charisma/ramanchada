@@ -54,7 +54,7 @@ def create(source_path, target_path = '', transformers = []):
     dt = h5py.special_dtype(vlen=str)
     f.create_dataset("Commits", data=c, dtype=dt)
     f.close()
-    return target_path
+    return
 
 def cleanMeta(meta):
     # This cleans complex-strcutures metadata, and returns a dict
