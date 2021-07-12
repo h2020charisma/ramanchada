@@ -1,0 +1,10 @@
+default:
+    image: python:3.9
+
+stages:
+    - unit_tests
+
+run-unit-tests:
+    stage: unit_tests
+    script:
+        - echo "This is a placeholder for running Python unit tests."
