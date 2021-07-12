@@ -1,5 +1,5 @@
 default:
-    image: python:3.9
+    image: continuumio/miniconda3
 
 stages:
     - unit_tests
@@ -9,4 +9,8 @@ run-unit-tests:
     tags:
         - asprunner
     script:
-        - echo "This is a placeholder for running Python unit tests."
+        - cd "$PROJECT_DIR"
+        - conda env update -f environment.yml
+        - source activate ramanchada
+        - conda install pytest
+        - pytest
