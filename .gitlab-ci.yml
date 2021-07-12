@@ -6,5 +6,7 @@ stages:
 
 run-unit-tests:
     stage: unit_tests
+    tags:
+        - asprunner
     script:
         - echo "This is a placeholder for running Python unit tests."
