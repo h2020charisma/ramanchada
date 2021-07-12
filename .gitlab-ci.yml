@@ -12,5 +12,6 @@ run-unit-tests:
         - cd "$PROJECT_DIR"
         - conda env update -f environment.yml
         - source activate ramanchada
-        - conda install pytest
+        - conda install flake8 pytest
+        - flake8 tests
         - pytest
