@@ -1,5 +1,18 @@
 # Contributor guide
 
+## Quick Start
+
+[Install Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html), then run the following:
+```
+conda env update -f environment.yml -n ramanchada-dev
+conda activate ramanchada-dev
+conda-develop ramanchada
+```
+
+Now, any changes to your local ramanchada code will be directly picked up, whether by the Jupyter notebooks running in the same Conda environment (just remember to restart the Jupyter kernel after each change!), `pytest` tests, or even the plain Python console (again, as long as you are in the same Conda environment). You can double-check if the ramanchada package is installed as a development one (that is, from the local files) by running something like `conda list | grep ramanchada` (it should show `<develop>` in the last column).
+
+Note that you can replace the Conda environment name, `ramanchada-dev`, with a one of your choice. It's best to avoid `ramanchada`, because that's the default name, when `-n` is not specified, per the [README](README.md), and conflicts may occur in the future if one isn't careful to not mix the two.
+
 ## The basic rules
 
 ### Committing code
