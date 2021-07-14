@@ -63,6 +63,7 @@ six==1.16.0
 sklearn==0.0
 spc @ git+https://github.com/glemaitre/spc.git@44b67d49e1e4fe9364e7cbce9a93086037703511
 specio @ git+https://github.com/paris-saclay-cds/specio.git@2963fd5bf6633e4b37d0a912c3ad0293371f5c7d
+spectrochempy==0.1.22
 terminado==0.10.0
 testpath==0.5.0
 threadpoolctl==2.1.0

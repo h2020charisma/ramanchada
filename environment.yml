@@ -1,6 +1,7 @@
 name: ramanchada
 channels:
   - conda-forge
+  - spectrocat
   - default
 dependencies:
   - h5py
@@ -11,6 +12,7 @@ dependencies:
   - pip
   - python
   - scipy
+  - spectrochempy
   - pip:
     - renishawWiRE==0.1.15
     - sklearn
