@@ -9,7 +9,7 @@ from scipy import sparse
 from scipy.sparse.linalg import spsolve
 from copy import deepcopy
 
-from utilities import lims
+from ramanchada.utilities import lims
 
 
 def baseline_model(y, method, **kwargs):

@@ -10,9 +10,9 @@ import time
 import zipfile
 from datetime import datetime
 # ramanchada imports
-from file_io.third_party_readers import readSPC, readWDF, readOPUS
-from file_io.txt_format_readers import read_JCAMP, readTXT
-from file_io.binary_readers import readSPA
+from ramanchada.file_io.third_party_readers import readSPC, readWDF, readOPUS
+from ramanchada.file_io.txt_format_readers import read_JCAMP, readTXT
+from ramanchada.file_io.binary_readers import readSPA
 
 
 def import_native(source_path):

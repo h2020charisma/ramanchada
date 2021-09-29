@@ -11,15 +11,16 @@ from copy import deepcopy
 import os
 import time
 # ramanchada imports
-from decorators import specstyle, log, change_y, change_x
-from pre_processing.baseline import baseline_model, xrays
-from pre_processing.denoise import smooth_curve
-from calibration.calibration import *
-from file_io.io import import_native,\
+from ramanchada.decorators import specstyle, log, change_y, change_x
+from ramanchada.pre_processing.baseline import baseline_model, xrays
+from ramanchada.pre_processing.denoise import smooth_curve
+
+from ramanchada.calibration.calibration import *
+from ramanchada.file_io.io import import_native,\
     read_chada, create_chada_from_native, commit_chada
-from analysis.peaks import find_spectrum_peaks, fit_spectrum_peaks_pos
-from analysis.signal import snr
-from utilities import hqi, lims, interpolation_within_bounds, labels_from_filenames
+from ramanchada.analysis.peaks import find_spectrum_peaks, fit_spectrum_peaks_pos
+from ramanchada.analysis.signal import snr
+from ramanchada.utilities import hqi, lims, interpolation_within_bounds, labels_from_filenames
 
     
 class Curve:
