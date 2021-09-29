@@ -18,7 +18,8 @@ from calibration.calibration import *
 from file_io.io import import_native,\
     read_chada, create_chada_from_native, commit_chada
 from analysis.peaks import find_spectrum_peaks, fit_spectrum_peaks_pos
-from utilities import hqi, lims, interpolation_within_bounds
+from analysis.signal import snr
+from utilities import hqi, lims, interpolation_within_bounds, labels_from_filenames
 
     
 class Curve:
@@ -585,12 +586,24 @@ class RamanSpectrum(Spectrum):
             self.y -= self.xrays
         else:
             pass
+    def get_snr(self):
+        """
+        Approximates the signal-to-noise ratio of a Raman spectrum.
+
+        Returns
+        -------
+        snr : double
+            > Approximation for SNR.
+        
+        """
+
+        return snr(self.y)
         
 class RamanChada(RamanSpectrum):
     """
     Raman CHADA file with logging and saving to disc. Inherits from RamanSpectrum.
     """
-    def __init__(self, source_path, commit=[],
+    def __init__(self, source_path, raw=True,
              x_label='Raman shift [rel. 1/cm]', y_label='counts [1]'):
         """
         Parameters
@@ -617,13 +630,12 @@ class RamanChada(RamanSpectrum):
         # If file is not CHADA, create from native
         if os.path.splitext(source_path)[1] != '.cha':
             source_path = create_chada_from_native(source_path)
-        self.x, self.y, self.meta = read_chada(source_path, commit=commit)
+        self.x, self.y, self.meta, self.x_label, self.y_label = read_chada(source_path, raw)
         self.file_path = source_path
         # Initialize log
         self.log = []
         # Save original state
         self.x0, self.y0 = self.x.copy(), self.y.copy()
-        self.x_label, self.y_label = x_label, y_label
         self.time = time.ctime()
     def show_log(self):
         """
@@ -662,14 +674,15 @@ class RamanChada(RamanSpectrum):
             # log lines are l = ['time', 'methodname', 'args', 'kwargs']
             func = getattr(self, l[1])
             func(*l[2], **l[3])
-    def commit(self, commit='latest'):
+    @log
+    def commit(self, commit_text="current"):
         """
         Makes a commit to the CHADA file by saving the current state to a new dataset within the existing HDF5 file.
 
         Parameters
         ----------
         commit : str, optional
-            > Name as reference for commit. The default is 'latest'.
+            > Name as reference for commit. The default is 'current'.
             Cannot be 'raw', since the first commit after conversion (the raw data) cannot be edited.
 
         Returns
@@ -677,7 +690,9 @@ class RamanChada(RamanSpectrum):
         None.
 
         """
-        commit_chada(self.file_path, commit, self.x, self.y)
+        commit_chada(self, commit_text)
+        # Initialize log
+        self.log = []
     
 class SpectrumGroup:
     """
@@ -840,6 +855,10 @@ class SpectrumGroup:
                 lines.append(s.bands.loc[peak_line].to_dict())
                 labels.append(s.meta['Original file'])
         return pd.DataFrame(lines, index=labels)
+    def generate_labels(self, pivot_string=None, pos=0, numeric=True, length=False):
+        # Make list of filenames without path and ext.
+        data_labels = [os.path.splitext(self.data_labels)[0] for s in self.spectra]
+        return labels_from_filenames(data_labels, pivot_string=pivot_string, pos=pos, numeric=numeric, length=length)
     
 class RamanCalibration(Curve):
     """

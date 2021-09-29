@@ -8,6 +8,7 @@ import os
 import h5py
 import time
 import zipfile
+from datetime import datetime
 # ramanchada imports
 from file_io.third_party_readers import readSPC, readWDF, readOPUS
 from file_io.txt_format_readers import read_JCAMP, readTXT
@@ -61,32 +62,41 @@ def cleanMeta(meta):
         except: meta = []
     return meta
 
-def read_chada(file_path, commit=[]):
+def read_chada(file_path, raw=False):
     # Open HDF5
     with h5py.File(file_path, "r") as f:
-        # Read latest commit by default
-        if commit == []:
-            if 'latest' in list(f.keys()):
-                commit = 'latest'
-            else:
-                commit = 'raw'
+        if raw:
+            dset = f['raw']
+        else:
+            dset = f[ list(f.keys())[-1] ]
         # Load metadata
-        a = f[commit].attrs
+        a = dset.attrs
         meta = dict(zip(a.keys(), [str(v) for v in a.values()]))
         # Load xy data
-        x, y = f[commit][0], f[commit][1]  
-    return x, y, meta
+        x, y = dset[0], dset[1]
+        # Load data labels
+        x_label, y_label = dset.dims[0].label, dset.dims[1].label
+    return x, y, meta, x_label, y_label
+
+def get_chada_commits(file_path, commit=[]):
+    # Open HDF5
+    with h5py.File(file_path, "r", track_order=True) as f:
+        commits = list(f.keys())
+    return commits
+
+def write_chada(file_path, dset_name, x, y, metadata, x_label = 'Raman shift [1/cm]', y_label = 'raw counts [1]'):
+    # Create HDF5 file
+    with h5py.File(file_path, "a", track_order=True) as f:
+        # Store Raman dataset + label
+        xy = f.create_dataset(dset_name, data=np.vstack((x, y)), track_order=True)
+        xy.dims[0].label = x_label
+        xy.dims[1].label = y_label
+        # Store metadata
+        xy.attrs.update(metadata)
     
 def write_new_chada(file_path, x, y, metadata):
-    # Create HDF5 file
-    with h5py.File(file_path, "w") as f:
-        # Store Raman dataset + label
-        xy = f.create_dataset("raw", data=np.vstack((x, y)))
-        xy.dims[0].label = 'Raman shift [1/cm]'
-        xy.dims[1].label = 'raw counts [1]'
-        # Store metadata
-        metadata["CHADA generated on"] = time.ctime()
-        xy.attrs.update(metadata)
+    metadata["CHADA generated on"] = time.ctime()
+    write_chada(file_path, "raw", x, y, metadata)
     
 def create_chada_from_native(native_filename, chada_filename=[]):
     if chada_filename == []:
@@ -96,20 +106,16 @@ def create_chada_from_native(native_filename, chada_filename=[]):
     write_new_chada(chada_filename, x, y, meta)
     return chada_filename
     
-def commit_chada(file_path, commit, x, y):
-    if commit == 'raw':
+def commit_chada(spectrum, commit_text, append=False):
+    if commit_text == 'raw':
         print('Raw cannot be edited!')
         return
-    # Open in append mode
-    with h5py.File(file_path, "a") as f:
-        # Does the commit already exist?
-        if commit in list(f.keys()):
-            # Resize and refill
-            f[commit].resize(len(x), axis=1)
-            f[commit][0], f[commit][1] = x, y
-        else:
-            # Create new with variable shape
-            f.create_dataset( commit, data=np.vstack((x, y)), maxshape=(2,1e4) )
+    if not append:
+        with h5py.File(spectrum.file_path, "a", track_order=True) as f:
+            for key in list(f.keys()):
+                if key != 'raw':
+                    del f[key]
+    write_chada(spectrum.file_path, commit_text, spectrum.x, spectrum.y, spectrum.meta, spectrum.x_label, spectrum.y_label)
 
 def getYDataType(y_data):
     types = {0: "Single spectrum", 1: "Line scan", 2: "Map", 3: "Map series / volume"}
@@ -141,3 +147,7 @@ def createZIP(source_path, target_path = '', transformers = []):
     zf.writestr("commits.txt", str(commits))
     zf.close()
     return
+
+def timestamp():
+    now = datetime.now()
+    return now.strftime("%Y-%m-%d %H:%M:%S ")
