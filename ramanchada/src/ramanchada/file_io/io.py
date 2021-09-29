@@ -116,38 +116,3 @@ def commit_chada(spectrum, commit_text, append=False):
                 if key != 'raw':
                     del f[key]
     write_chada(spectrum.file_path, commit_text, spectrum.x, spectrum.y, spectrum.meta, spectrum.x_label, spectrum.y_label)
-
-def getYDataType(y_data):
-    types = {0: "Single spectrum", 1: "Line scan", 2: "Map", 3: "Map series / volume"}
-    return types[len(y_data.shape)-1]
-
-def createZIP(source_path, target_path = '', transformers = []):
-    # 1.	Create CHADA file archive and include a copy of the Native Data file
-    filename, file_extension = os.path.splitext(source_path)
-    if target_path == '': target_path = filename + ".cha"
-    # Choose matching native file format reader according to filename extension
-    # (.spc, .wdf, .txt, .csv, …), or user specification.
-    reader = getReader(file_extension)
-    # Import Native file using the matching reader included in the CHARISMA software.
-    try:
-        x_data, y_data, static_metadata = reader(source_path)
-    except Exception as err:
-        raise err
-    # Extract metadata from native metadata and spectrum data, store in metadata dictionary, and include in CHADA archive.
-    static_metadata["Generated on"] = time.ctime()
-    static_metadata["Original file"] = os.path.basename(source_path)
-    # Check if list of initial transformations has been given by user (e.g. “-b –s –c[310,1890]“ = baseline + smooth + crop Raman Shifts to 310 – 1,890 1/cm).
-    #dynamic_metadata = dynamicMetaDataUpdate(x_data, y_data)
-    commits = ["Generated CHADA on " + time.ctime()]
-    zf = zipfile.ZipFile(target_path, mode="w", compression=zipfile.ZIP_DEFLATED)
-    zf.write(source_path, os.path.basename(source_path))
-    zf.writestr("static_meta.txt", str(static_metadata))
-    #zf.writestr("dynamic_meta.txt", str(dynamic_metadata))
-    zf.writestr("transformers.txt", str(transformers))
-    zf.writestr("commits.txt", str(commits))
-    zf.close()
-    return
-
-def timestamp():
-    now = datetime.now()
-    return now.strftime("%Y-%m-%d %H:%M:%S ")
