@@ -26,5 +26,13 @@ def test_load_data_file_into_object():
     native_file = get_native_file()
     chada_obj = RamanChada(native_file)
     assert chada_obj.x.shape == (3190,)
+    
+    chada_obj.fit_baseline(method='snip')
+    chada_obj.remove_baseline()
+    
+    chada_obj.rewind(0)
+    chada_obj.fit_baseline(method='als')
+    chada_obj.remove_baseline()
+
     if chada_file.exists():
         os.remove(chada_file)
