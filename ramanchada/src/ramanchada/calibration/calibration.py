@@ -9,8 +9,8 @@ from copy import deepcopy
 from scipy.interpolate import interp1d
 from scipy.ndimage import gaussian_filter1d
 
-from analysis.peaks import fit_spectrum_peaks_pos
-from utilities import lims
+from ramanchada.analysis.peaks import fit_spectrum_peaks_pos
+from ramanchada.utilities import lims
 
 
 def raman_x_calibration(target_spectrum, reference_peak_list, fitmethod):
