@@ -6,9 +6,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from scipy.interpolate import interp1d
 from scipy.signal import find_peaks, savgol_filter, peak_widths
 from scipy.optimize import curve_fit
 from scipy.special import voigt_profile
+from ramanchada.utilities import lims
 
 
 def find_spectrum_peaks(x, y, prominence=.05, sg=11, x_min=25, x_max=10000, sort_by='prominence'):
@@ -17,7 +19,6 @@ def find_spectrum_peaks(x, y, prominence=.05, sg=11, x_min=25, x_max=10000, sort
     Finds peaks and their FWHM and return in spectral units
     """
     # Crop to specified range
-    from utilities import lims
     l = lims(x, x_min, x_max)
     x, y = l(x), l(y)
     # Filter + minmax normalization are important!
@@ -76,7 +77,6 @@ def fit_spectrum_peaks_pos(x, y, pos_in_x_units, method, interval_width=2, show=
     x_fit_pos = []
     x_fit_width = []
     x_fit_area = []
-    from utilities import lims
     methods = {'par': parabola_fit, 'voigt': voigt_fit, 'vg': gauss_voigt_fit}
     for p, w in zip(pos_in_x_units, half_peak_widths):
         l = lims(x, p-interval_width*w, p+interval_width*w)
@@ -218,7 +218,6 @@ def parabola_fit(x, y, show=False):
     The width and area are geometrically estimated from the interpolated function using peak_widths.
     """
     new_x = np.linspace(x.min(), x.max(), 1000)
-    from scipy.interpolate import interp1d
     f = interp1d(x, y, kind="quadratic", bounds_error=False, fill_value=0)
     new_y = f(new_x)
     #w, _, _, _ = peak_widths(new_y, np.array(new_y.argmax()), rel_height=0.5)

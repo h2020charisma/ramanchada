@@ -14,8 +14,6 @@ import time
 from ramanchada.decorators import specstyle, log, change_y, change_x
 from ramanchada.pre_processing.baseline import baseline_model, xrays
 from ramanchada.pre_processing.denoise import smooth_curve
-
-from ramanchada.calibration.calibration import *
 from ramanchada.file_io.io import import_native,\
     read_chada, create_chada_from_native, commit_chada
 from ramanchada.analysis.peaks import find_spectrum_peaks, fit_spectrum_peaks_pos
@@ -604,7 +602,7 @@ class RamanChada(RamanSpectrum):
     """
     Raman CHADA file with logging and saving to disc. Inherits from RamanSpectrum.
     """
-    def __init__(self, source_path, raw=True,
+    def __init__(self, source_path, raw=False,
              x_label='Raman shift [rel. 1/cm]', y_label='counts [1]'):
         """
         Parameters
@@ -631,7 +629,7 @@ class RamanChada(RamanSpectrum):
         # If file is not CHADA, create from native
         if os.path.splitext(source_path)[1] != '.cha':
             source_path = create_chada_from_native(source_path)
-        self.x, self.y, self.meta, self.x_label, self.y_label = read_chada(source_path, raw)
+        self.x, self.y, self.meta, self.x_label, self.y_label = read_chada(source_path, raw=raw)
         self.file_path = source_path
         # Initialize log
         self.log = []
@@ -694,6 +692,12 @@ class RamanChada(RamanSpectrum):
         commit_chada(self, commit_text)
         # Initialize log
         self.log = []
+
+def make_test_RamanChada():
+    dir = os.path.dirname(__file__)
+    filename = os.path.join(dir, "testdata", "200218-17.wdf")
+    return RamanChada(filename)
+
     
 class SpectrumGroup:
     """
@@ -861,60 +865,7 @@ class SpectrumGroup:
         data_labels = [os.path.splitext(self.data_labels)[0] for s in self.spectra]
         return labels_from_filenames(data_labels, pivot_string=pivot_string, pos=pos, numeric=numeric, length=length)
     
-class RamanCalibration(Curve):
-    """
-    Object containing a Raman x axis calibration.
-    """
-    test_x = np.linspace(0, 3500, 100)
-    def __init__(self, data, poly_degree=3, interpolate=False):
-        """
 
-        Parameters
-        ----------
-        data : DataFrame
-            > DataFrame with two columns, the first containing the x positions and the second containing the shifts at these positions.
-            
-        poly_degree : int, optional
-            > Degree of polynomial model fitted to the data points. The default is 3.
-            
-        interpolate : bool, optional
-            > If True, values of the polynomial model which are outside of the data range used for calibration are interpolated.
-            If False, all shifts outside the data range are set to the boundary values.
-            The default is False.
-
-        Returns
-        -------
-        None.
-
-        """
-        super().__init__(data, data.columns[0], data.columns[1])
-        # fit shift vector
-        # If specified, use 1d linear interpolation
-        if len(self.x) == 0:
-            self.interp_x = np.zeros_like
-        else:
-            if interpolate:
-                self.interp_x = np.poly1d(np.polyfit(self.x, self.y, poly_degree))
-            else:
-                # Only apply shift within x limits of calibration data
-                # Set shifts outside the limits to boundary values
-                self.interp_x = interpolation_within_bounds(self.x, self.y, poly_degree)
-    def show(self):
-        """
-        Plots the calibration data points and the associated model.
-
-        Returns
-        -------
-        None.
-
-        """
-        plt.figure()
-        plt.plot(self.test_x, self.interp_x(self.test_x))
-        plt.plot(self.x, self.y, 'ko')
-        plt.xlabel(self.x_label)
-        plt.ylabel(self.y_label)
-        plt.show()
-        
 class RamanMTF(Curve):
     """
     Object containing an MTF model in Fourier space. The reciprocal coordinate is 1/pixels.

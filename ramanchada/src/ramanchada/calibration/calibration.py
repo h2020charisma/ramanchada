@@ -11,7 +11,61 @@ from scipy.ndimage import gaussian_filter1d
 
 from ramanchada.analysis.peaks import fit_spectrum_peaks_pos
 from ramanchada.utilities import lims
+from ramanchada.classes import Curve
 
+class RamanCalibration(Curve):
+    """
+    Object containing a Raman x axis calibration.
+    """
+    test_x = np.linspace(0, 3500, 100)
+    def __init__(self, data, poly_degree=3, interpolate=False):
+        """
+
+        Parameters
+        ----------
+        data : DataFrame
+            > DataFrame with two columns, the first containing the x positions and the second containing the shifts at these positions.
+            
+        poly_degree : int, optional
+            > Degree of polynomial model fitted to the data points. The default is 3.
+            
+        interpolate : bool, optional
+            > If True, values of the polynomial model which are outside of the data range used for calibration are interpolated.
+            If False, all shifts outside the data range are set to the boundary values.
+            The default is False.
+
+        Returns
+        -------
+        None.
+
+        """
+        super().__init__(data, data.columns[0], data.columns[1])
+        # fit shift vector
+        # If specified, use 1d linear interpolation
+        if len(self.x) == 0:
+            self.interp_x = np.zeros_like
+        else:
+            if interpolate:
+                self.interp_x = np.poly1d(np.polyfit(self.x, self.y, poly_degree))
+            else:
+                # Only apply shift within x limits of calibration data
+                # Set shifts outside the limits to boundary values
+                self.interp_x = interpolation_within_bounds(self.x, self.y, poly_degree)
+    def show(self):
+        """
+        Plots the calibration data points and the associated model.
+
+        Returns
+        -------
+        None.
+
+        """
+        plt.figure()
+        plt.plot(self.test_x, self.interp_x(self.test_x))
+        plt.plot(self.x, self.y, 'ko')
+        plt.xlabel(self.x_label)
+        plt.ylabel(self.y_label)
+        plt.show()
 
 def raman_x_calibration(target_spectrum, reference_peak_list, fitmethod):
     # spectrum is a RamanSpectrum
@@ -59,7 +113,7 @@ def raman_y_calibration_from_spectrum(target_spectrum, reference_spectrum, x_min
     return construct_calibration(x, g, x_col_name='Raman shift', y_col_name='y gain')
 
 def construct_calibration(pos, shifts, x_col_name='Raman shift', y_col_name='RS correction'):
-    from classes import RamanCalibration
+
     caldata = pd.DataFrame()
     caldata[x_col_name] = pos
     caldata[y_col_name] = shifts

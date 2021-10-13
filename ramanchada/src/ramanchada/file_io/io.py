@@ -65,10 +65,15 @@ def cleanMeta(meta):
 def read_chada(file_path, raw=False):
     # Open HDF5
     with h5py.File(file_path, "r") as f:
+        keys = list(f.keys())
         if raw:
             dset = f['raw']
+        elif len(keys) < 2:
+            dset = f[keys[0]]
         else:
-            dset = f[ list(f.keys())[-1] ]
+            # load the one that is not 'raw'
+            right_key = [key for key in keys if key != 'raw'][0]
+            dset = f[right_key ]
         # Load metadata
         a = dset.attrs
         meta = dict(zip(a.keys(), [str(v) for v in a.values()]))
@@ -84,9 +89,9 @@ def get_chada_commits(file_path, commit=[]):
         commits = list(f.keys())
     return commits
 
-def write_chada(file_path, dset_name, x, y, metadata, x_label = 'Raman shift [1/cm]', y_label = 'raw counts [1]'):
+def write_chada(file_path, dset_name, x, y, metadata, mode='a', x_label = 'Raman shift [1/cm]', y_label = 'raw counts [1]'):
     # Create HDF5 file
-    with h5py.File(file_path, "a", track_order=True) as f:
+    with h5py.File(file_path, mode, track_order=True) as f:
         # Store Raman dataset + label
         xy = f.create_dataset(dset_name, data=np.vstack((x, y)), track_order=True)
         xy.dims[0].label = x_label
@@ -96,7 +101,7 @@ def write_chada(file_path, dset_name, x, y, metadata, x_label = 'Raman shift [1/
     
 def write_new_chada(file_path, x, y, metadata):
     metadata["CHADA generated on"] = time.ctime()
-    write_chada(file_path, "raw", x, y, metadata)
+    write_chada(file_path, "raw", x, y, metadata, mode='w')
     
 def create_chada_from_native(native_filename, chada_filename=[]):
     if chada_filename == []:
@@ -115,4 +120,5 @@ def commit_chada(spectrum, commit_text, append=False):
             for key in list(f.keys()):
                 if key != 'raw':
                     del f[key]
-    write_chada(spectrum.file_path, commit_text, spectrum.x, spectrum.y, spectrum.meta, spectrum.x_label, spectrum.y_label)
+    write_chada(spectrum.file_path, commit_text, spectrum.x, spectrum.y, spectrum.meta,\
+        x_label=spectrum.x_label, y_label=spectrum.y_label)
