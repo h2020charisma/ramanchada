@@ -19,6 +19,8 @@ from ramanchada.file_io.io import import_native,\
 from ramanchada.analysis.peaks import find_spectrum_peaks, fit_spectrum_peaks_pos
 from ramanchada.analysis.signal import snr
 from ramanchada.utilities import hqi, lims, interpolation_within_bounds, labels_from_filenames
+from ramanchada.calibration.calibration import raman_x_calibration, raman_x_calibration_from_spectrum, raman_y_calibration_from_spectrum,\
+    deconvolve_mtf, relative_ctf, apply_relative_ctf, raman_mtf_from_psfs, extract_xrays
 
     
 class Curve:
@@ -865,6 +867,59 @@ class SpectrumGroup:
         data_labels = [os.path.splitext(self.data_labels)[0] for s in self.spectra]
         return labels_from_filenames(data_labels, pivot_string=pivot_string, pos=pos, numeric=numeric, length=length)
     
+class RamanCalibration(Curve):
+    """
+    Object containing a Raman x axis calibration.
+    """
+    test_x = np.linspace(0, 3500, 100)
+    def __init__(self, data, poly_degree=3, interpolate=False):
+        """
+
+        Parameters
+        ----------
+        data : DataFrame
+            > DataFrame with two columns, the first containing the x positions and the second containing the shifts at these positions.
+            
+        poly_degree : int, optional
+            > Degree of polynomial model fitted to the data points. The default is 3.
+            
+        interpolate : bool, optional
+            > If True, values of the polynomial model which are outside of the data range used for calibration are interpolated.
+            If False, all shifts outside the data range are set to the boundary values.
+            The default is False.
+
+        Returns
+        -------
+        None.
+
+        """
+        super().__init__(data, data.columns[0], data.columns[1])
+        # fit shift vector
+        # If specified, use 1d linear interpolation
+        if len(self.x) == 0:
+            self.interp_x = np.zeros_like
+        else:
+            if interpolate:
+                self.interp_x = np.poly1d(np.polyfit(self.x, self.y, poly_degree))
+            else:
+                # Only apply shift within x limits of calibration data
+                # Set shifts outside the limits to boundary values
+                self.interp_x = interpolation_within_bounds(self.x, self.y, poly_degree)
+    def show(self):
+        """
+        Plots the calibration data points and the associated model.
+
+        Returns
+        -------
+        None.
+
+        """
+        plt.figure()
+        plt.plot(self.test_x, self.interp_x(self.test_x))
+        plt.plot(self.x, self.y, 'ko')
+        plt.xlabel(self.x_label)
+        plt.ylabel(self.y_label)
+        plt.show()
 
 class RamanMTF(Curve):
     """
