@@ -59,7 +59,7 @@ def raman_y_calibration_from_spectrum(target_spectrum, reference_spectrum, x_min
     return construct_calibration(x, g, x_col_name='Raman shift', y_col_name='y gain')
 
 def construct_calibration(pos, shifts, x_col_name='Raman shift', y_col_name='RS correction'):
-    from classes import RamanCalibration
+    from ramanchada.classes import RamanCalibration
     caldata = pd.DataFrame()
     caldata[x_col_name] = pos
     caldata[y_col_name] = shifts

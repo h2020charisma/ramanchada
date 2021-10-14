@@ -14,13 +14,13 @@ import time
 from ramanchada.decorators import specstyle, log, change_y, change_x
 from ramanchada.pre_processing.baseline import baseline_model, xrays
 from ramanchada.pre_processing.denoise import smooth_curve
-
-from ramanchada.calibration.calibration import *
 from ramanchada.file_io.io import import_native,\
     read_chada, create_chada_from_native, commit_chada
 from ramanchada.analysis.peaks import find_spectrum_peaks, fit_spectrum_peaks_pos
 from ramanchada.analysis.signal import snr
 from ramanchada.utilities import hqi, lims, interpolation_within_bounds, labels_from_filenames
+from ramanchada.calibration.calibration import raman_x_calibration, raman_x_calibration_from_spectrum, raman_y_calibration_from_spectrum,\
+    deconvolve_mtf, relative_ctf, apply_relative_ctf, raman_mtf_from_psfs, extract_xrays
 
     
 class Curve:
@@ -604,7 +604,7 @@ class RamanChada(RamanSpectrum):
     """
     Raman CHADA file with logging and saving to disc. Inherits from RamanSpectrum.
     """
-    def __init__(self, source_path, raw=True,
+    def __init__(self, source_path, raw=False,
              x_label='Raman shift [rel. 1/cm]', y_label='counts [1]'):
         """
         Parameters
@@ -631,7 +631,7 @@ class RamanChada(RamanSpectrum):
         # If file is not CHADA, create from native
         if os.path.splitext(source_path)[1] != '.cha':
             source_path = create_chada_from_native(source_path)
-        self.x, self.y, self.meta, self.x_label, self.y_label = read_chada(source_path, raw)
+        self.x, self.y, self.meta, self.x_label, self.y_label = read_chada(source_path, raw=raw)
         self.file_path = source_path
         # Initialize log
         self.log = []
@@ -694,6 +694,12 @@ class RamanChada(RamanSpectrum):
         commit_chada(self, commit_text)
         # Initialize log
         self.log = []
+
+def make_test_RamanChada():
+    dir = os.path.dirname(__file__)
+    filename = os.path.join(dir, "testdata", "200218-17.wdf")
+    return RamanChada(filename)
+
     
 class SpectrumGroup:
     """
@@ -914,7 +920,7 @@ class RamanCalibration(Curve):
         plt.xlabel(self.x_label)
         plt.ylabel(self.y_label)
         plt.show()
-        
+
 class RamanMTF(Curve):
     """
     Object containing an MTF model in Fourier space. The reciprocal coordinate is 1/pixels.

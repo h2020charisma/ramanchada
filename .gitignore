@@ -20,6 +20,7 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
@@ -138,4 +139,4 @@ dmypy.json
 cython_debug/
 
 # CHADA files
-*.cha
+#*.cha
