@@ -31,6 +31,23 @@ def specstyle(func):
         plt.show()
     return wrapper
 
+def mark_peaks(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        func(self, *args, **kwargs)
+        for peak_x_pos, peak_y_pos in zip(self.bands['position'], self.bands['intensity']):
+            peak_coords = (peak_x_pos, peak_y_pos + self.y.max()*.01)
+            text_coords = (peak_x_pos, peak_y_pos + self.y.max()*.1)
+            plt.gca().annotate(
+                f'{peak_x_pos:.0f}',
+                xy = peak_coords, xycoords = 'data',
+                xytext = text_coords, textcoords='data',
+                rotation=90,
+                arrowprops = dict(facecolor='black', shrink=0.05, width=2, headwidth=5),
+                horizontalalignment = 'center', verticalalignment='bottom', size=10
+                )
+    return wrapper
+
 def log(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):

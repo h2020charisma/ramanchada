@@ -10,8 +10,9 @@ from scipy.interpolate import interp1d
 from copy import deepcopy
 import os
 import time
+from IPython.display import display
 # ramanchada imports
-from ramanchada.decorators import specstyle, log, change_y, change_x
+from ramanchada.decorators import specstyle, log, change_y, change_x, mark_peaks
 from ramanchada.pre_processing.baseline import baseline_model, xrays
 from ramanchada.pre_processing.denoise import smooth_curve
 from ramanchada.file_io.io import import_native,\
@@ -196,7 +197,7 @@ class Spectrum(Curve):
         """
         self.y *= -1.
         self.y -= self.y.min()
-    def peaks(self, x_min=-1e9, x_max=1e9, fit=True, fitmethod = 'voigt', interval_width=2, 
+    def peaks(self, prominence=0.05, x_min=-1e9, x_max=1e9, fit=True, fitmethod = 'voigt', interval_width=2, 
               sort_by='prominence', show=False):
         """
         Automated detection and analysis of peaks.
@@ -235,7 +236,7 @@ class Spectrum(Curve):
         """
         l = lims(self.x, x_min, x_max)
         x, y = l(self.x), l(self.y)
-        self.bands = find_spectrum_peaks(x, y, x_min=x_min, x_max=x_max,
+        self.bands = find_spectrum_peaks(x, y, prominence=prominence, x_min=x_min, x_max=x_max,
                                          sort_by=sort_by)
         if fit:
             positions, widths, areas = fit_spectrum_peaks_pos(x, y,
@@ -243,6 +244,15 @@ class Spectrum(Curve):
             self.bands[fitmethod + ' fitted position'] = positions
             self.bands[fitmethod + ' fitted FWHM'] = widths
             self.bands[fitmethod + ' fitted area'] = areas
+    @specstyle
+    @mark_peaks
+    def show_bands(self):
+        if not hasattr(self, 'bands'):
+            print(f'No bands located yet. Use **bands()** first.')
+            return
+        else:
+            plt.plot(self.x, self.y)
+            self.bands.style
     def fit_baseline(self, method='als', lam=1e5, p=0.001, niter=100, smooth=7):
         """
         Fits a flourescent background model.

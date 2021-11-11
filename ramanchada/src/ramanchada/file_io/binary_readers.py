@@ -5,6 +5,8 @@
 # Python libraries
 import numpy as np
 import struct
+import matplotlib.pyplot as plt
+from itertools import islice
 
 def readSPA(filename, flip = True):
     """function to read k-vector and spectrum from a *.SPA file
@@ -36,3 +38,170 @@ def readSPA(filename, flip = True):
         # set corrupt counts to zero
         spec[spec>1e5] = 0
     return k, spec, {}
+
+def read_ngs(file, show=True):
+    f = open(file, "rb")
+    # read NextGen string
+    s = f.read(10)
+    # if the string does not match, abort
+    nextgen_string = s.decode("utf-8").lower()
+    if nextgen_string != 'ngsnextgen':
+        print('Not a readable file !')
+        return
+    # read DataMatrix string form byte #18
+    s = f.seek(18)
+    # read length of string as single byte
+    s = f.read(1)
+    l = int.from_bytes(s, "big") 
+    # read the actual string
+    s = f.read(l)
+    datamatrix_string =  s.decode("utf-8").lower()
+    # if the string does not match, abort
+    if datamatrix_string != 'datamatrix':
+        print('Not a readable file !')
+        return
+    # read filename at byte #38
+    s = f.seek(38)
+    # read length of string as single byte
+    s = f.read(1)
+    l = int.from_bytes(s, "big")
+    # read the actual string
+    s = f.read(l)
+    file_name = s.decode("utf-8")
+    # Read no. of channels as 32 bit integer, 16 bytes from end of filename
+    s = f.seek(16, 1)
+    s = f.read(4)
+    n = struct.unpack('i', s)[0]
+    print(f'Reading Labspec .ngs file {file_name} with {n} channels.')
+    # Read data block, starting 8 bytes from end of channel num. Each y count is a 32 bit integer.
+    y = read_4byte_datablock(f, n, 8)
+    # Read parameter block. Before, there's a rather complicated sequence of skipping obsolete parameters...
+    f.seek(2, 1)
+    s = f.read(1)
+    l = int.from_bytes(s, "big")
+    # Skip bytes as long as they are zeros
+    if l == 0:
+        while l == 0:
+            s = f.read(1)
+            l = int.from_bytes(s, "big")
+        f.seek(1, 1)
+        s = f.read(1)
+        l = int.from_bytes(s, "big")
+    #
+    f.seek(l, 1)
+    s = f.read(1)
+    l = int.from_bytes(s, "big")
+    #
+    f.seek(l, 1)
+    f.seek(2, 1)
+    s = f.read(1)
+    l = int.from_bytes(s, "big")
+    #
+    f.seek(l, 1)
+    s = f.read(1)
+    l = int.from_bytes(s, "big")
+    #
+    f.seek(l, 1)
+    f.seek(16, 1)
+    # Finally, read the start and end wavenumbers (start_x)
+    s = f.read(4)
+    start_x = struct.unpack('f', s)[0]
+    s = f.read(4)
+    end_x = struct.unpack('f', s)[0]
+    # Check whether end_x is equal to no. of channels
+    if end_x == n:
+        x = read_4byte_datablock(f, n, 20)
+    else:
+        # Construct x axis
+        x = np.linspace(start_x, end_x, n)
+    meta = read_ngs_meta(f)
+    f.close()
+    # plot
+    if show:
+        plt.figure()
+        plt.plot(x,y)
+    return x, y, meta
+
+def read_4byte_datablock(f, length, skip=8):
+    s = f.seek(skip, 1)
+    y = np.zeros(length)
+    for ii in range(length):
+        s = f.read(4)
+        y[ii] = struct.unpack('f', s)[0]
+    return y
+
+def read_bytestring(f):
+    # read length of string as single byte
+    s = f.read(1)
+    l = int.from_bytes(s, "big") 
+    # read the actual string
+    s = f.read(l)
+    return s.decode('iso-8859-1')
+
+def read_ngs_meta(f):
+    position = f.tell()+1
+    f.seek(position)
+    abl = ''
+    while abl != 'Table':          #zuerst: Table Param
+        s = f.read(1)
+        l = int.from_bytes(s, "big")
+        if l == 5:
+            f.seek(-1, 1)
+            abl = read_bytestring(f)
+        else:
+            position += 1
+            f.seek(position)
+    abl = ''
+    position = f.tell()
+    f.seek(position)
+    while abl != 'Table':         
+        s = f.read(1)
+        l = int.from_bytes(s, "big")
+        if l == 5:
+            f.seek(-1, 1)
+            abl = read_bytestring(f)
+            position = f.tell()
+        else:
+            position += 1
+            f.seek(position)
+    abl = read_bytestring(f)
+    # Make dictionary
+    meta = {}
+    if abl.upper() == 'ACQ':
+        abl = read_bytestring(f)
+        f.seek(4, 1)
+        # read no. of params
+        s = f.read(1)
+        l = int.from_bytes(s, "big")
+        f.seek(1, 1)
+        par_names = []
+        # Read parameter names
+        for ii in range(l):
+            abl = read_bytestring(f)
+            par_names.append(abl)
+        # Skip some stuff
+        f.seek(2, 1)
+        abl = read_bytestring(f)
+        abl = read_bytestring(f)
+        f.seek(10, 1)
+        s = f.read(1)
+        # read no. of values
+        l = int.from_bytes(s, "big")
+        f.seek(1, 1)
+        # Read parameter values
+        par_values = []
+        for ii in range(l):
+            abl = read_bytestring(f)
+            par_values.append(abl)
+        f.seek(2, 1)
+        # Read parameter units
+        par_units = []
+        for ii in range(l):
+            abl = read_bytestring(f)
+            # add unit to dict key and exchange for new key
+            par_units.append(abl)
+        # add units to par names
+        par = [ name + f' [{unit}]' for name, unit in zip(par_names, par_units) ]
+        # Construct meta dict
+        meta = dict( zip(par, par_values) )
+        return meta
