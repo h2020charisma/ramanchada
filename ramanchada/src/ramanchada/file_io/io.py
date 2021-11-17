@@ -12,7 +12,7 @@ from datetime import datetime
 # ramanchada imports
 from ramanchada.file_io.third_party_readers import readSPC, readWDF, readOPUS
 from ramanchada.file_io.txt_format_readers import read_JCAMP, readTXT
-from ramanchada.file_io.binary_readers import readSPA
+from ramanchada.file_io.binary_readers import readSPA, read_ngs
 
 
 def import_native(source_path):
@@ -39,6 +39,7 @@ def getReader(file_extension):
                '.spa': readSPA,
                '.0': readOPUS, '.1': readOPUS, '.2': readOPUS,
                '.wdf': readWDF,
+               '.ngs': read_ngs,
                '.jdx': read_JCAMP, '.dx': read_JCAMP,
                '.txt': readTXT,'.txtr': readTXT, '.csv': readTXT, '.prn': readTXT, '.rruf': readTXT}
     return readers.get(file_extension, readTXT)

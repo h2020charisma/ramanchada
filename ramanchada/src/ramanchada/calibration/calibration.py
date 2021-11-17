@@ -13,7 +13,7 @@ from ramanchada.analysis.peaks import fit_spectrum_peaks_pos
 from ramanchada.utilities import lims
 
 
-def raman_x_calibration(target_spectrum, reference_peak_list, fitmethod):
+def raman_x_calibration(target_spectrum, reference_peak_list, fitmethod, interpolate=False):
     # spectrum is a RamanSpectrum
     # reference is a list of precise reference x peak positions
     # pos must be in x range an non-nan
@@ -26,7 +26,7 @@ def raman_x_calibration(target_spectrum, reference_peak_list, fitmethod):
     target_pos = [target_pos[ii] for ii, cond in enumerate(ind) if not cond]
     reference_peak_list = [reference_peak_list[ii] for ii, cond in enumerate(ind) if not cond]
     # construct calibration
-    return construct_calibration(target_pos, np.array(reference_peak_list) - np.array(target_pos))
+    return construct_calibration(target_pos, np.array(reference_peak_list) - np.array(target_pos), interpolate=interpolate)
 
 def raman_x_calibration_from_spectrum(target_spectrum, reference_spectrum, fitmethod, peak_pos=[]):
     # Find peaks in target
@@ -56,14 +56,14 @@ def raman_y_calibration_from_spectrum(target_spectrum, reference_spectrum, x_min
     gain = ref.y / tar.y
     ok = ~(np.isnan(gain) ^ np.isinf(gain))
     g, x = gain[ok], tar.x[ok]
-    return construct_calibration(x, g, x_col_name='Raman shift', y_col_name='y gain')
+    return construct_calibration(x, g, x_col_name='Raman shift', y_col_name='y gain', interpolate=False)
 
 def construct_calibration(pos, shifts, x_col_name='Raman shift', y_col_name='RS correction'):
     from ramanchada.classes import RamanCalibration
     caldata = pd.DataFrame()
     caldata[x_col_name] = pos
     caldata[y_col_name] = shifts
-    return RamanCalibration(caldata)
+    return RamanCalibration(caldata, interpolate=interpolate)
 
 # def raman_x_calibration_from_spectrum(target_spectrum, reference_spectrum, fitmethod, peak_pos=[]):
 #     # Find peaks in target
