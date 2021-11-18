@@ -751,8 +751,10 @@ class SpectrumGroup:
         """
         self.spectra.append( deepcopy(spectrum) )
         self.x_label, self.y_label = spectrum.x_label, spectrum.y_label
-        self.data_labels.append(spectrum.meta['Original file'])
-        #self.data_labels.append(len(self.data_labels))
+        if hasattr(spectrum, 'meta'):
+            self.data_labels.append(spectrum.meta['Original file'])
+        else:
+            self.data_labels.append(len(self.data_labels))
     @specstyle
     def plot(self, leg=True):
         """
@@ -794,14 +796,14 @@ class SpectrumGroup:
         lo = max([s.x.min() for s in self.spectra])
         hi = min([s.x.max() for s in self.spectra])
         # Make common x
-        x = np.linspace(lo, hi, x_increment)
+        x = np.arange(lo, hi, x_increment)
         # for all
         y = []
         for s in self.spectra:
             # interpolate to x
             f_inter = interp1d(s.x, s.y, kind="quadratic")
             y.append(f_inter(x))
-        return np.array(y)
+        return x, np.array(y)
     def process(self, method, *args, **kwargs):
         """
         Applies a specified method to separately to each spectrum in the group.
