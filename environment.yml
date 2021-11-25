@@ -10,7 +10,7 @@ dependencies:
   - pandas
   - path
   - pip
-  - python
+  - python<3.10
   - scipy
   - spectrochempy
   - pip:
