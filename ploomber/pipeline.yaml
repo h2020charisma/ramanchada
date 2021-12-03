@@ -1,0 +1,14 @@
+tasks:
+  - source: native2chada.py
+    product:
+      nb: output/native2chada.ipynb
+      data: "{{folder_chada}}"
+    params:
+      folder_native: "{{folder_native}}"
+      folder_chada: "{{folder_chada}}"
+
+  - source: plotspectra.py
+    product:
+      nb: output/plotspectra.ipynb
+    params:
+      folder_chada: "{{folder_chada}}"      
