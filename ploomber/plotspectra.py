@@ -1,22 +1,26 @@
 # + tags=["parameters"]
 upstream = None
 product = None
+upstream = ['normalise']
 folder_chada = None
-upstream = ['native2chada']
 # -
 
 
 import os
-import pandas as pd
 from ramanchada.classes import RamanChada
+from ramanchada.file_io.io import get_chada_commits
 
 def plot_spectra(f_name):
     filename, file_extension = os.path.splitext(f_name)
-    if file_extension ==".cha":        
-        SOP = RamanChada(f_name)
+    if file_extension ==".cha":       
+        commits = get_chada_commits(f_name)        
+        print(f_name,commits)     
+        SOP = RamanChada(f_name,raw=True)
+        SOP.plot()           
+        SOP = RamanChada(f_name,raw=False)
         SOP.plot()
 
-from FileProcessor import FileProcessor
+from processors import FileProcessor
 
 FP = FileProcessor(folder_chada,folder_chada)
 
