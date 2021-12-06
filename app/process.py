@@ -1,9 +1,68 @@
+from logging import ERROR
 import h5pyd, h5py
 import h5pyd._apps.hsinfo as hsinfo
 import h5pyd._apps.hsload as hsload
 import h5pyd._apps.utillib as utillib
 import os, tempfile, shutil
+from ramanchada.classes import RamanChada
 from ramanchada.file_io.io import create_chada_from_native
+
+from enum import Enum
+import time
+import uuid
+import json
+
+
+
+class TaskStatus(Enum):
+    Running="Running", 
+    Cancelled="Cancelled",
+    Completed="Completed",
+    Error="Error",
+    Queued="Queued"
+
+    
+
+class TaskResult:
+    def __init__(self,name=None,status : TaskStatus=None,started=time.ctime()):
+        self.uri = None
+        self.id = str(uuid.uuid4())
+        self.name = name
+        self.error = None
+        self.status = str(status)
+        self.started=started
+        self.completed = None
+        self.result = None
+        self.errorCause=None
+    
+    def set_completed(self,result,completed=time.ctime()):
+        self.status = str(TaskStatus.Completed)
+        self.result = result
+        self.completed = completed
+
+    def set_queued(self,result,completed=time.ctime()):
+        self.status = str(TaskStatus.Queued)
+        self.result = result
+        self.completed = completed
+     
+    def set_cancelled(self,error,errorCause,completed=time.time()):
+        self.status = str(TaskStatus.Cancelled)
+        self.error=error
+        self.errorCause=errorCause
+        self.result = None
+        self.completed = completed     
+
+    def set_error(self,error,errorCause,completed=time.ctime()):
+        self.status = str(TaskStatus.Error)
+        self.error=error
+        self.errorCause=errorCause
+        self.result = None
+        self.completed = completed    
+
+    def to_dict(self):
+        return {"name" : self.name,
+            "result" : self.result, "error" : self.error, "errorCause" : self.errorCause,
+             "completed" : self.completed, "started" : self.started, "status" : self.status }  
 
 
 def load_h5stream(stream,destination_domain):
@@ -41,15 +100,19 @@ def load_native(file,f_name,destination_domain):
     finally:
         if native_filename!=None:
             os.remove(native_filename)
+        if chada_filename!=None:
+            os.remove(chada_filename)            
   
-
-def load_domain(url):
+from ramanchada.classes import RamanChada
+def load_domain(url,raw=True):
     print(url)
     f = None
     try:
-        url="/Round_Robin_1/LBF/S0P_WITEcAlpha532_100x_005_10000msx1.cha\\raw"
-        f = h5pyd.File(url, 'r')
-        return f.filename
+        #url="/Round_Robin_1/LBF/nCAL10_iR532_Probe_005_2500msx3.cha"
+        R = RamanChada(url,raw=raw,is_h5pyd=True)
+        #f = h5pyd.File(url, 'r')
+        
+        return R
 
     except Exception as err:
         raise err
