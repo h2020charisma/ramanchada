@@ -52,7 +52,7 @@ class TaskResult:
         self.result = None
         self.completed = completed     
 
-    def set_error(self,error,errorCause,completed=time.ctime()):
+    def set_error(self,error,errorCause=None,completed=time.ctime()):
         self.status = str(TaskStatus.Error)
         self.error=error
         self.errorCause=errorCause
@@ -65,6 +65,18 @@ class TaskResult:
              "completed" : self.completed, "started" : self.started, "status" : self.status }  
 
 
+
+def check_folder(self,domain="/Round_Robin_1/",create=False):
+    cfg = hsinfo.cfg
+    try:
+        return h5pyd.Folder(domain, endpoint=cfg["hs_endpoint"], username=cfg["hs_username"], password=cfg["hs_password"], bucket="charisma", owner=cfg["hs_username"])
+    except IOError as err:
+        if create:
+            return h5pyd.Folder(domain, mode='x',  endpoint=cfg["hs_endpoint"], username=cfg["hs_username"], password=cfg["hs_password"], bucket="charisma", owner=cfg["hs_username"])
+        else:
+            raise err
+
+
 def load_h5stream(stream,destination_domain):
     try:
         f_in = h5py.File(stream,'r')
@@ -75,8 +87,8 @@ def load_h5stream(stream,destination_domain):
 def load_h5file(h5file,destination_domain):
     try:
         cfg = hsinfo.cfg
-        fout = h5pyd.File(destination_domain, "w", endpoint=cfg["hs_endpoint"], username=cfg["hs_username"], password=cfg["hs_password"], bucket="charisma", retries=3, owner=cfg["hs_username"])
-        utillib.load_file(h5file, fout, verbose=False,dataload="ingest")    
+        with h5pyd.File(destination_domain, "w", endpoint=cfg["hs_endpoint"], username=cfg["hs_username"], password=cfg["hs_password"], bucket="charisma", retries=3, owner=cfg["hs_username"]) as fout:
+            utillib.load_file(h5file, fout, verbose=False,dataload="ingest")    
     except Exception as err:
         raise    
 
@@ -90,18 +102,22 @@ def load_native(file,f_name,destination_domain):
             native_filename = tmp.name
         
         chada_filename = native_filename.replace(file_extension,".cha")
-        print("create_chada_from_native",native_filename,chada_filename)
 
         create_chada_from_native(native_filename, chada_filename)
-        load_h5file(h5py.File(chada_filename,'r'),destination_domain)
+        with h5py.File(chada_filename,'r') as f_in:
+            load_h5file(f_in,destination_domain)
     except Exception as err:
         print(err)
         raise          
     finally:
         if native_filename!=None:
             os.remove(native_filename)
+            
         if chada_filename!=None:
-            os.remove(chada_filename)            
+            try:
+                os.remove(chada_filename) 
+            except:
+                pass           
   
 from ramanchada.classes import RamanChada
 def load_domain(url,raw=True):

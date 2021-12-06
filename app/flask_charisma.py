@@ -6,7 +6,7 @@ from io import BytesIO
 import uuid
 import process
 import traceback
-import os
+import os,sys
 import json
 
 
@@ -56,45 +56,66 @@ class ProcessDomain(Resource):
             tr.set_completed(domain)
             return R.meta  ,200
         except Exception as err:
-            tr.set_error(traceback.print_exc(err))
-            #traceback.print_exc()
-            #print(">",traceback.format_exc(err))
-            #return jsonify({"err" : str(traceback.format_exc(err))}),400
+            (type, value, traceback) = sys.exc_info()
+            tr.set_error(str(value),str(type))
             return tr.to_dict(),400
 
     def post(self):
         tr = TaskResult("POST /domain")
         uploaded_file = request.files['file']
         
-        provider = "UNKNOWN"
+        provider = None
         try:
             provider = request.form['provider']
         except:
-            pass
+            tr.set_error("Missing provider")
+            return tr.to_dict(), 400 
+            
+        folder = "/Round_Robin_1/{}/".format(provider)        
         f_name = uploaded_file.filename
         if f_name==None or f_name=="":
-            return {"err" : "No file"}, 400 
+            tr.set_error("Missing file")
+            return tr.to_dict(), 400 
         try:
             filename, file_extension = os.path.splitext(f_name)
             
+            process.check_folder(folder)
+
             if file_extension==".cha":
-                destination_domain="/Round_Robin_1/{}/{}".format(provider,f_name)
+                destination_domain="{}/{}".format(folder,f_name)
                 process.load_h5stream(uploaded_file.stream,destination_domain)
             else:
-                destination_domain="/Round_Robin_1/{}/{}.cha".format(provider,filename)
+                destination_domain="{}/{}.cha".format(folder,filename)
                 process.load_native(uploaded_file,f_name,destination_domain)
             
             tr.set_completed(destination_domain)
             return tr.to_dict()  ,200
+
         except Exception as err:
-            tr.set_error("xx","yy")
-            traceback.print_exc()
+            (type, value, traceback) = sys.exc_info()
+            tr.set_error(str(value),str(type))
             return tr.to_dict(), 400 
 
 from flask.json import JSONEncoder
 
 
 app = Flask(__name__)
+
+from werkzeug.exceptions import HTTPException
+
+@app.errorhandler(HTTPException)
+def handle_exception(e):
+    """Return JSON instead of HTML for HTTP errors."""
+    # start with the correct headers and status code from the error
+    response = e.get_response()
+    # replace the body with JSON
+    response.data = json.dumps({
+        "code": e.code,
+        "name": e.name,
+        "description": e.description,
+    })
+    response.content_type = "application/json"
+    return response
 
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
 api = Api(app)
