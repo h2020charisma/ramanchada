@@ -18,7 +18,7 @@ from ramanchada.decorators import specstyle, log, change_y, change_x, mark_peaks
 from ramanchada.pre_processing.baseline import baseline_model, xrays
 from ramanchada.pre_processing.denoise import smooth_curve
 from ramanchada.file_io.io import import_native,\
-    read_chada, create_chada_from_native, commit_chada, write_new_chada
+    read_chada, create_chada_from_native, commit_chada, write_new_chada,open_h5py_file,open_h5pyd_file
 from ramanchada.analysis.peaks import find_spectrum_peaks, fit_spectrum_peaks_pos, find_spectrum_peaks_cwt
 from ramanchada.analysis.signal import snr
 from ramanchada.utilities import hqi, lims, interpolation_within_bounds, labels_from_filenames, wavelengths_to_wavenumbers
@@ -745,7 +745,7 @@ class RamanChada(RamanSpectrum):
     Raman CHADA file with logging and saving to disc. Inherits from RamanSpectrum.
     """
     def __init__(self, source_path, raw=False,
-             x_label='Raman shift [rel. 1/cm]', y_label='counts [1]'):
+             x_label='Raman shift [rel. 1/cm]', y_label='counts [1]',is_h5pyd=False):
         """
         Parameters
         ----------
@@ -771,13 +771,16 @@ class RamanChada(RamanSpectrum):
         # If file is not CHADA, create from native
         if os.path.splitext(source_path)[1] != '.cha':
             source_path = create_chada_from_native(source_path)
-        self.x, self.y, self.meta, self.x_label, self.y_label = read_chada(source_path, raw=raw)
+        self.x, self.y, self.meta, self.x_label, self.y_label = read_chada(source_path, raw=raw, fn_open=open_h5pyd_file if is_h5pyd else open_h5py_file )
         self.file_path = source_path
         # Initialize log
         self.log = []
         # Save original state
         self.x0, self.y0 = self.x.copy(), self.y.copy()
         self.time = time.ctime()
+        self.raw = raw
+
+
     def show_log(self):
         """
         Shows the log.

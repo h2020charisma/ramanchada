@@ -5,7 +5,7 @@
 # Python libraries
 import numpy as np
 import os
-import h5py
+import h5py,h5pyd
 import time
 import zipfile
 from datetime import datetime
@@ -63,9 +63,15 @@ def cleanMeta(meta):
         except: meta = []
     return meta
 
-def read_chada(file_path, raw=False):
+def open_h5py_file(file_path):
+    return h5py.File(file_path, "r");
+
+def open_h5pyd_file(file_path):
+    return h5pyd.File(file_path, "r");    
+
+def read_chada(file_path, raw=False, fn_open=open_h5py_file):
     # Open HDF5
-    with h5py.File(file_path, "r") as f:
+    with fn_open(file_path) as f:
         keys = list(f.keys())
         if raw:
             dset = f['raw']
