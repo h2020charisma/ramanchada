@@ -6,6 +6,7 @@ import h5pyd._apps.utillib as utillib
 import os, tempfile, shutil
 from ramanchada.classes import RamanChada
 from ramanchada.file_io.io import create_chada_from_native
+from  tempfile import TemporaryFile
 
 from enum import Enum
 import time
@@ -66,7 +67,7 @@ class TaskResult:
 
 
 
-def check_folder(self,domain="/Round_Robin_1/",create=False):
+def check_folder(domain="/Round_Robin_1/",create=False):
     cfg = hsinfo.cfg
     try:
         return h5pyd.Folder(domain, endpoint=cfg["hs_endpoint"], username=cfg["hs_username"], password=cfg["hs_password"], bucket="charisma", owner=cfg["hs_username"])
@@ -92,7 +93,39 @@ def load_h5file(h5file,destination_domain):
     except Exception as err:
         raise    
 
-def load_native(file,f_name,destination_domain):
+def cha2tmp(fname,params={}):
+    tmpfile = TemporaryFile()
+    tf = h5py.File(tmpfile, 'w')
+    #attributes = self.parse_name(fname)
+    try:
+        with h5py.File(fname, "r") as f:       
+            _group = tf.create_group("annotation_study")  
+            for p in params:
+                if p!="sample":
+                    try:
+                        _group.attrs.create(p,params[p])
+                    except Exception as err:
+                        print(err)   
+            
+            try:
+                _group = tf.create_group("annotation_sample")  
+                p="sample"
+                _group.attrs.create(p,params[p])
+            except Exception as err:
+                print(err)                       
+
+            for key in f.keys():
+                _tmp=f[key]
+                _dataset = tf.create_dataset(key, data=_tmp)
+                for item in f[key].attrs.items():
+                    _dataset.attrs.create(item[0],item[1])
+        
+    except Exception as err:
+        print(">>",err)
+
+    return tf 
+
+def load_native(file,f_name,destination_domain,params={}):
     native_filename=None
     try:
         filename, file_extension = os.path.splitext(f_name)
@@ -104,7 +137,9 @@ def load_native(file,f_name,destination_domain):
         chada_filename = native_filename.replace(file_extension,".cha")
 
         create_chada_from_native(native_filename, chada_filename)
-        with h5py.File(chada_filename,'r') as f_in:
+        params["native_filename"] = os.path.basename(f_name)
+        
+        with cha2tmp(chada_filename,params) as f_in: 
             load_h5file(f_in,destination_domain)
     except Exception as err:
         print(err)

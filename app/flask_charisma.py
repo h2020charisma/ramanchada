@@ -33,6 +33,7 @@ class Algorithm(Resource):
     def post(self):
         pass
 
+import h5pyd 
 
 class ProcessDomain(Resource):
 
@@ -60,33 +61,47 @@ class ProcessDomain(Resource):
             tr.set_error(str(value),str(type))
             return tr.to_dict(),400
 
+# curl http://127.0.0.1:5000/dataset -F "file=@PST10_iR532_Probe_005_3000msx7.spc" -F "provider=FNMT-Madrid" -F "investigation=Round_Robin_1" -F "instrument=BWTek" -F "wavelength=532" -F "optical_path=Probe" -F "sample=PST10" -u user
+# {"name": "POST /domain", "result": "/Round_Robin_1/FNMT-Madrid/BWTek/532/Probe/PST10_iR532_Probe_005_3000msx7.cha", "error": null, "errorCause": null, "completed": "Mon Dec  6 16:14:21 2021", "started": "Mon Dec  6 16:14:21 2021", "status": "TaskStatus.Completed"}
     def post(self):
         tr = TaskResult("POST /domain")
         uploaded_file = request.files['file']
         
-        provider = None
-        try:
-            provider = request.form['provider']
-        except:
-            tr.set_error("Missing provider")
-            return tr.to_dict(), 400 
-            
-        folder = "/Round_Robin_1/{}/".format(provider)        
+        paths = ["investigation","provider","instrument","wavelength","optical_path","sample"]
+        params = {}
+      
+        for p in paths:
+            params[p] = None
+            try:
+                params[p]  = request.form[p]
+            except:
+                tr.set_error("Missing {}".format(p))
+                return tr.to_dict(), 400   
+        folder = ""
+        for p in paths:
+            if p!="sample":
+                folder = "{}/{}".format(folder,params[p])
+                domain="{}/".format(folder)
+                h5folder = process.check_folder(domain,create=True)
+                h5folder.close()
+              
+        #tr.set_error(folder)
+        #return tr.to_dict(), 400     
+         
         f_name = uploaded_file.filename
         if f_name==None or f_name=="":
             tr.set_error("Missing file")
             return tr.to_dict(), 400 
         try:
             filename, file_extension = os.path.splitext(f_name)
-            
-            process.check_folder(folder)
 
             if file_extension==".cha":
                 destination_domain="{}/{}".format(folder,f_name)
-                process.load_h5stream(uploaded_file.stream,destination_domain)
+                process.load_h5stream(uploaded_file.stream,destination_domain,params)
             else:
                 destination_domain="{}/{}.cha".format(folder,filename)
-                process.load_native(uploaded_file,f_name,destination_domain)
+                process.load_native(file=uploaded_file,f_name=f_name,destination_domain=destination_domain,
+                    params=params)
             
             tr.set_completed(destination_domain)
             return tr.to_dict()  ,200
@@ -122,7 +137,7 @@ api = Api(app)
 #api.add_resource(Pipeline, '/pipeline')
 #api.add_resource(Pipeline_dataset, '/pipeline/dataset')
 
-api.add_resource(ProcessDomain, '/domain')
+api.add_resource(ProcessDomain, '/dataset')
 
 if __name__ == '__main__':
     app.run(debug=False)  # run our Flask app
