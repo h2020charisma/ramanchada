@@ -79,20 +79,50 @@ class ProcessDomain(Resource):
 
 
     def get(self):
-        tr = TaskResult(name="domain")
+        tr = None
         try:
             domain = request.args.get('domain')
+            tr = TaskResult(name=domain)
         except:
             return {"err" : "domain parameter missing"}, 400
         try:
             raw = request.args.get('raw')
         except:
             raw=False
-        try:
-            R = process.load_domain(domain,raw)
-            #return jsonpickle.encode(R, unpicklable=False),200
-            tr.set_completed(domain)
-            return R.meta  ,200
+        try:    
+            result = { "subdomains" : [],"domain" : domain, "annotation" : [], "datasets" : []}
+            if domain is None:
+                tr.set_error("missing domain")
+                return tr.to_dict(),400
+            if domain.endswith("/"):
+                with process.check_folder(domain,create=False) as folder:
+                    n = folder._getSubdomains()
+
+                    for s in folder._subdomains:
+                        subdomain = {"name" : s["name"], "annotation" : []}
+                        try:
+                            with process.read_file(s["name"]) as file:
+                                tmp,datasets = process.get_file_annotations(file)
+                                subdomain["annotation"].append(tmp) 
+                                subdomain["datasets"] = datasets
+                                pass
+                        except:
+                            pass                       
+                        result["subdomains"].append(subdomain)
+
+                return  result,  200                
+            else:
+                with process.read_file(domain) as file:
+                    tmp,datasets = process.get_file_annotations(file)
+
+                    result["annotation"].append(tmp)  
+                    result["datasets"] = datasets
+                    #for item in file.attrs.items():
+                    #    print(item)
+                #R = process.load_domain(domain,raw)
+                #return jsonpickle.encode(R, unpicklable=False),200
+                #tr.set_completed(domain)
+                return  result,  200 
         except Exception as err:
             (type, value, traceback) = sys.exc_info()
             tr.set_error(str(value),str(type))
@@ -101,10 +131,16 @@ class ProcessDomain(Resource):
 # curl http://127.0.0.1:5000/dataset -F "file=@PST10_iR532_Probe_005_3000msx7.spc" -F "provider=FNMT-Madrid" -F "investigation=Round_Robin_1" -F "instrument=BWTek" -F "wavelength=532" -F "optical_path=Probe" -F "sample=PST10" -u user
 # {"name": "POST /domain", "result": "/Round_Robin_1/FNMT-Madrid/BWTek/532/Probe/PST10_iR532_Probe_005_3000msx7.cha", "error": null, "errorCause": null, "completed": "Mon Dec  6 16:14:21 2021", "started": "Mon Dec  6 16:14:21 2021", "status": "TaskStatus.Completed"}
     def post(self):
-        tr = TaskResult("POST /domain")
-        uploaded_file = request.files['file']
-        
-        paths = ["investigation","provider","instrument","wavelength","optical_path","sample"]
+        print(request.headers)
+        #print("data\t",request.data)
+        print("\nargs\n",request.args)
+        print("\nform\n",request.form)
+        print(request.endpoint)
+        print(request.method)
+        print(request.remote_addr)
+        tr = TaskResult("POST /dataset")
+
+        paths = ["investigation","provider","instrument","wavelength","optical_path","sample","laser_power"]
         params = {}
       
         for p in paths:
@@ -112,23 +148,40 @@ class ProcessDomain(Resource):
             try:
                 params[p]  = request.form[p]
             except:
+                
                 tr.set_error("Missing {}".format(p))
+                print(tr.to_dict());
                 return tr.to_dict(), 400   
+        print(params)
         folder = ""
         for p in paths:
-            if p!="sample":
-                folder = "{}/{}".format(folder,params[p])
-                domain="{}/".format(folder)
-                h5folder = process.check_folder(domain,create=True)
-                h5folder.close()
+            if p=="sample":
+                continue;
+            if p=="laser_power":
+                continue;
+            folder = "{}/{}".format(folder,params[p])
+            domain="{}/".format(folder)
+            h5folder = process.check_folder(domain,create=True)
+            h5folder.close()
               
         #tr.set_error(folder)
         #return tr.to_dict(), 400     
          
-        f_name = uploaded_file.filename
-        if f_name==None or f_name=="":
-            tr.set_error("Missing file")
-            return tr.to_dict(), 400 
+        try:
+            uploaded_file = request.files['file']
+            f_name = uploaded_file.filename
+            if f_name==None or f_name=="":
+                tr.set_error("Missing file")
+                print(tr.to_dict());
+                return tr.to_dict(), 400 
+        except Exception as err:
+            print(err);
+            (type, value, traceback) = sys.exc_info()
+            tr.set_error(str(value),str(type))
+            print(tr.to_dict());
+            return tr.to_dict(), 400          
+
+
         try:
             filename, file_extension = os.path.splitext(f_name)
 
@@ -144,8 +197,10 @@ class ProcessDomain(Resource):
             return tr.to_dict()  ,200
 
         except Exception as err:
+            print(err);
             (type, value, traceback) = sys.exc_info()
             tr.set_error(str(value),str(type))
+            print(tr.to_dict());
             return tr.to_dict(), 400 
 
 from flask.json import JSONEncoder
@@ -178,4 +233,4 @@ api.add_resource(ProcessDomain, '/dataset')
 api.add_resource(Algorithm, '/algorithm')
 
 if __name__ == '__main__':
-    app.run(debug=False)  # run our Flask app
+    app.run(debug=True)  # run our Flask app

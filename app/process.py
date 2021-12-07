@@ -66,6 +66,30 @@ class TaskResult:
              "completed" : self.completed, "started" : self.started, "status" : self.status }  
 
 
+def read_file(domain=None):
+    cfg = hsinfo.cfg
+    try:
+        return h5pyd.File(domain, endpoint=cfg["hs_endpoint"], username=cfg["hs_username"], password=cfg["hs_password"], bucket="charisma", owner=cfg["hs_username"])
+    except IOError as err:
+        raise err
+
+def get_file_annotations(file=None):
+    annotation = {}
+    datasets = []
+    for key in file.keys():
+        print(key)
+        if key=="annotation_sample":
+            for item in file[key].attrs:
+                annotation[item]=file[key].attrs[item] 
+        elif key=="annotation_study":
+            for item in file[key].attrs:
+                annotation[item]=file[key].attrs[item]  
+        else:
+            datasets.append({"key" : key, "uuid" : file[key].id.uuid, "name" : file[key].name, 
+                                "shape" : file[key].shape, "size" : file[key].size})   
+    print(annotation)
+    print(datasets)
+    return annotation,datasets
 
 def check_folder(domain="/Round_Robin_1/",create=False):
     cfg = hsinfo.cfg
