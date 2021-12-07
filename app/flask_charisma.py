@@ -30,8 +30,45 @@ class Algorithm(Resource):
     def __init__(self):
         pass
 
+    def run(self,R, algorithm):
+        if "normalise" == algorithm:
+            R.normalize()
+            R.commit(algorithm)
+            return R
+        elif "baseline" == algorithm:
+            R.baseline()
+            R.commit(algorithm)    
+            return R
+        elif "smooth" == algorithm:
+            R.smooth()
+            R.commit(algorithm)
+            return R
+        else:
+            return None                      
+
     def post(self):
-        pass
+        tr = TaskResult(name="algorithm")
+        paths = ["dataset","algorithm"]
+        params = {}
+      
+        for p in paths:
+            params[p] = None
+            try:
+                params[p]  = request.form[p]
+            except:
+                tr.set_error("Missing {}".format(p))
+                return tr.to_dict(), 400          
+
+        try:
+            R = process.load_domain(params["dataset"],True)
+            self.run(R,params["algorithm"])
+
+            tr.set_completed(params["dataset"])
+            return tr.to_dict()  ,200
+        except Exception as err:
+            (type, value, traceback) = sys.exc_info()
+            tr.set_error(str(value),str(type))
+            return tr.to_dict(),400
 
 import h5pyd 
 
@@ -138,6 +175,7 @@ api = Api(app)
 #api.add_resource(Pipeline_dataset, '/pipeline/dataset')
 
 api.add_resource(ProcessDomain, '/dataset')
+api.add_resource(Algorithm, '/algorithm')
 
 if __name__ == '__main__':
     app.run(debug=False)  # run our Flask app
