@@ -161,7 +161,15 @@ def load_native(file,f_name,destination_domain,params={}):
         chada_filename = native_filename.replace(file_extension,".cha")
 
         create_chada_from_native(native_filename, chada_filename)
-        params["native_filename"] = os.path.basename(f_name)
+        try:
+            R = RamanChada(chada_filename)
+            R.normalize()
+            R.fit_baseline()
+            R.remove_baseline()
+            R.commit("baseline_removed")
+            params["native_filename"] = os.path.basename(f_name)
+        except Exception as err:
+            print(chada_filename,err)
         
         with cha2tmp(chada_filename,params) as f_in: 
             load_h5file(f_in,destination_domain)
