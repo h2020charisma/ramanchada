@@ -4,6 +4,7 @@
 
 # external imports
 from weakref import ref
+import h5py, h5pyd
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,7 +19,7 @@ from ramanchada.decorators import specstyle, log, change_y, change_x, mark_peaks
 from ramanchada.pre_processing.baseline import baseline_model, xrays
 from ramanchada.pre_processing.denoise import smooth_curve
 from ramanchada.file_io.io import import_native,\
-    read_chada, create_chada_from_native, commit_chada, write_new_chada,open_h5py_file,open_h5pyd_file
+    read_chada, create_chada_from_native, commit_chada, write_new_chada
 from ramanchada.analysis.peaks import find_spectrum_peaks, fit_spectrum_peaks_pos, find_spectrum_peaks_cwt
 from ramanchada.analysis.signal import snr
 from ramanchada.utilities import hqi, lims, interpolation_within_bounds, labels_from_filenames, wavelengths_to_wavenumbers
@@ -768,10 +769,13 @@ class RamanChada(RamanSpectrum):
         None.
 
         """
+        self.is_h5pyd = is_h5pyd
         # If file is not CHADA, create from native
-        if os.path.splitext(source_path)[1] != '.cha':
-            source_path = create_chada_from_native(source_path)
-        self.x, self.y, self.meta, self.x_label, self.y_label = read_chada(source_path, raw=raw, fn_open=open_h5pyd_file if is_h5pyd else open_h5py_file )
+
+        if not is_h5pyd:
+            if os.path.splitext(source_path)[1] != '.cha':
+                source_path = create_chada_from_native(source_path,h5module=h5py)
+        self.x, self.y, self.meta, self.x_label, self.y_label = read_chada(source_path, raw=raw, h5module = self.h5module() )
         self.file_path = source_path
         # Initialize log
         self.log = []
@@ -779,7 +783,9 @@ class RamanChada(RamanSpectrum):
         self.x0, self.y0 = self.x.copy(), self.y.copy()
         self.time = time.ctime()
         self.raw = raw
-
+        
+    def h5module(self):
+        return h5pyd if self.is_h5pyd else h5py;
 
     def show_log(self):
         """
@@ -834,7 +840,7 @@ class RamanChada(RamanSpectrum):
         None.
 
         """
-        commit_chada(self, commit_text)
+        commit_chada(self, commit_text, h5module = self.h5module() )
         # Initialize log
         self.log = []
 

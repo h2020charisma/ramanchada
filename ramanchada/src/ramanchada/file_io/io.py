@@ -63,15 +63,10 @@ def cleanMeta(meta):
         except: meta = []
     return meta
 
-def open_h5py_file(file_path):
-    return h5py.File(file_path, "r");
 
-def open_h5pyd_file(file_path):
-    return h5pyd.File(file_path, "r");    
-
-def read_chada(file_path, raw=False, fn_open=open_h5py_file):
+def read_chada(file_path, raw=False, h5module=h5py):
     # Open HDF5
-    with fn_open(file_path) as f:
+    with h5module.File(file_path, "r") as f:
         keys = list(f.keys())
         if raw:
             dset = f['raw']
@@ -90,42 +85,43 @@ def read_chada(file_path, raw=False, fn_open=open_h5py_file):
         x_label, y_label = dset.dims[0].label, dset.dims[1].label
     return x, y, meta, x_label, y_label
 
-def get_chada_commits(file_path, commit=[]):
+def get_chada_commits(file_path, commit=[],h5module=h5py):
     # Open HDF5
-    with h5py.File(file_path, "r", track_order=True) as f:
+    #with h5py.File(file_path, "r", track_order=True) as f:
+    with h5module.File(file_path, "r",track_order=True) as f:        
         commits = list(f.keys())
     return commits
 
-def write_chada(file_path, dset_name, x, y, metadata, mode='a', x_label = 'Raman shift [1/cm]', y_label = 'raw counts [1]'):
+def write_chada(file_path, dset_name, x, y, metadata, mode='a', x_label = 'Raman shift [1/cm]', y_label = 'raw counts [1]',h5module=h5py):
     # Create HDF5 file
-    with h5py.File(file_path, mode, track_order=True) as f:
+    with h5module.File(file_path, mode) as f:
         # Store Raman dataset + label
-        xy = f.create_dataset(dset_name, data=np.vstack((x, y)), track_order=True)
+        xy = f.create_dataset(dset_name, data=np.vstack((x, y)))
         xy.dims[0].label = x_label
         xy.dims[1].label = y_label
         # Store metadata
         xy.attrs.update(metadata)
     
-def write_new_chada(file_path, x, y, metadata):
+def write_new_chada(file_path, x, y, metadata,h5module=h5py):
     metadata["CHADA generated on"] = time.ctime()
-    write_chada(file_path, "raw", x, y, metadata, mode='w')
+    write_chada(file_path, "raw", x, y, metadata, mode='w',h5module=h5py)
     
-def create_chada_from_native(native_filename, chada_filename=[]):
+def create_chada_from_native(native_filename, chada_filename=[],h5module=h5py):
     if chada_filename == []:
         name, _ = os.path.splitext(native_filename)
         chada_filename = name + ".cha"
     x, y, meta = import_native(native_filename)
-    write_new_chada(chada_filename, x, y, meta)
+    write_new_chada(chada_filename, x, y, meta,h5module)
     return chada_filename
     
-def commit_chada(spectrum, commit_text, append=False):
+def commit_chada(spectrum, commit_text, append=False,h5module=h5py):
     if commit_text == 'raw':
         print('Raw cannot be edited!')
         return
     if not append:
-        with h5py.File(spectrum.file_path, "a", track_order=True) as f:
+        with h5module.File(spectrum.file_path, "a") as f:
             for key in list(f.keys()):
                 if key != 'raw':
                     del f[key]
     write_chada(spectrum.file_path, commit_text, spectrum.x, spectrum.y, spectrum.meta,\
-        x_label=spectrum.x_label, y_label=spectrum.y_label)
+        x_label=spectrum.x_label, y_label=spectrum.y_label,h5module=h5module)
