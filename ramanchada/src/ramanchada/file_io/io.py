@@ -74,7 +74,7 @@ def read_chada(file_path, raw=False, h5module=h5py):
             dset = f[keys[0]]
         else:
             # load the one that is not 'raw'
-            right_key = [key for key in keys if key != 'raw'][0]
+            right_key = [key for key in keys if (key != 'raw') and (isinstance(f[key], h5module.Dataset))][0]
             dset = f[right_key ]
         # Load metadata
         a = dset.attrs
