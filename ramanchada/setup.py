@@ -40,6 +40,7 @@ setup(
         "matplotlib",
         "sklearn",
         "h5py",
+        "h5pyd",
         "pandas",
         "renishawWiRE==0.1.15",
         "scipy",
