@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  flask:
+    image: charisma-api:latest
+    hostname: charisma-api
+    restart: unless-stopped
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.charisma-api.entrypoints: tcp80v4*,tcp443v4*,tcp80v6*,tcp443v6*
+      traefik.http.routers.charisma-api.rule: Host(`api.charisma.ideaconsult.net`)
+      traefik.http.routers.charisma-api.middlewares: auth-charisma-api@file
+      traefik.http.services.charisma-api.loadbalancer.server.port: 5000
+    volumes:
+      - ./.hscfg:/home/charisma-api/.hscfg:ro
+      - ./app:/opt/charisma-api:ro
+      - ./ramanchada:/opt/ramanchada:ro
+      - ./run-charisma-api.sh:/run-charisma-api.sh:ro
+    entrypoint: ["/run-charisma-api.sh"]
