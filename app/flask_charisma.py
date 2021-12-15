@@ -26,6 +26,7 @@ class Pipeline_dataset(Pipeline) :
     def __init__(self,_pipelines={ "normalize" : {}, "baseline" : {} }):
         super().__init__(_pipelines)
 
+# all Ramanchada functions
 class Algorithm(Resource):
     def __init__(self):
         pass
@@ -99,7 +100,8 @@ class ProcessDomain(Resource):
                     n = folder._getSubdomains()
 
                     for s in folder._subdomains:
-                        subdomain = {"name" : s["name"], "annotation" : []}
+                        subdomain = {"name" : s["name"], "annotation" : [], "last_segment" : s["name"].split("/")[-1]}
+                        
                         try:
                             with process.read_file(s["name"]) as file:
                                 tmp,datasets = process.get_file_annotations(file)
@@ -131,13 +133,13 @@ class ProcessDomain(Resource):
 # curl http://127.0.0.1:5000/dataset -F "file=@PST10_iR532_Probe_005_3000msx7.spc" -F "provider=FNMT-Madrid" -F "investigation=Round_Robin_1" -F "instrument=BWTek" -F "wavelength=532" -F "optical_path=Probe" -F "sample=PST10" -u user
 # {"name": "POST /domain", "result": "/Round_Robin_1/FNMT-Madrid/BWTek/532/Probe/PST10_iR532_Probe_005_3000msx7.cha", "error": null, "errorCause": null, "completed": "Mon Dec  6 16:14:21 2021", "started": "Mon Dec  6 16:14:21 2021", "status": "TaskStatus.Completed"}
     def post(self):
-        print(request.headers)
+        #print(request.headers)
         #print("data\t",request.data)
-        print("\nargs\n",request.args)
-        print("\nform\n",request.form)
-        print(request.endpoint)
-        print(request.method)
-        print(request.remote_addr)
+        #print("\nargs\n",request.args)
+        #print("\nform\n",request.form)
+        #print(request.endpoint)
+        #print(request.method)
+        #print(request.remote_addr)
         tr = TaskResult("POST /dataset")
 
         paths = ["investigation","provider","instrument","wavelength","optical_path","sample","laser_power"]
@@ -150,9 +152,9 @@ class ProcessDomain(Resource):
             except:
                 
                 tr.set_error("Missing {}".format(p))
-                print(tr.to_dict());
+                #print(tr.to_dict());
                 return tr.to_dict(), 400   
-        print(params)
+        #print(params)
         folder = ""
         for p in paths:
             if p=="sample":
@@ -172,7 +174,7 @@ class ProcessDomain(Resource):
             f_name = uploaded_file.filename
             if f_name==None or f_name=="":
                 tr.set_error("Missing file")
-                print(tr.to_dict());
+                #print(tr.to_dict());
                 return tr.to_dict(), 400 
         except Exception as err:
             print(err);
@@ -204,6 +206,24 @@ class ProcessDomain(Resource):
             return tr.to_dict(), 400 
 
 from flask.json import JSONEncoder
+
+class StudyRegistration(Resource):
+    
+    def __init__(self):
+        pass
+
+    
+    def get(self):
+        tr = None
+        try:
+            domain = request.args.get('domain')
+            tr = TaskResult(name=domain)
+        except:
+            return {"err" : "domain parameter missing"}, 400
+        try:
+            raw = request.args.get('raw')
+        except:
+            raw=False
 
 
 app = Flask(__name__)

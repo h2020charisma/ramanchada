@@ -202,3 +202,92 @@ def load_domain(url,raw=True):
     finally:
         if f!=None:
             f.close()
+
+from enum import Enum
+class ParamsRaman(Enum):
+    BRAND = "brand"
+    MODEL = "model"
+    WAVELENGTH = "wavelength"
+    GRATINGS   ="gratings"
+    COLLECTION_OPTICS="collection_optics"
+    SLIT_SIZE = "slit_size"
+    PIN_HOLE_SIZE = "pin_hole_size"
+
+class StudyRegistration:
+    def __init__(self):
+        self._tag_instrument = "instruments"
+        self._tag_optical_paths = "optical_paths"
+        self._tag_id = "id"
+
+        pass
+    def get_instrument_id(self,instrument):
+        if self._tag_id in instrument:
+            id = instrument[self._tag_id]
+        else:
+            id = "{}_{}_{}".format(instrument[ParamsRaman.BRAND.value],instrument[ParamsRaman.MODEL.value],instrument[ParamsRaman.WAVELENGTH.value])
+        return id
+
+    def instrument2h5(self,instrument,h5_group):
+        h5_group.attrs[self._tag_id] = self.get_instrument_id(instrument)
+        h5_group.attrs[ParamsRaman.BRAND.value] = instrument[ParamsRaman.BRAND.value]
+        h5_group.attrs[ParamsRaman.MODEL.value] = instrument[ParamsRaman.MODEL.value]
+        h5_group.attrs[ParamsRaman.WAVELENGTH.value] = instrument[ParamsRaman.WAVELENGTH.value]
+        h5_group.attrs[ParamsRaman.COLLECTION_OPTICS.value] = instrument[ParamsRaman.COLLECTION_OPTICS.value]
+        h5_group.attrs[ParamsRaman.GRATINGS.value] = instrument[ParamsRaman.GRATINGS.value]
+        h5_group.attrs[ParamsRaman.SLIT_SIZE.value] = instrument[ParamsRaman.SLIT_SIZE.value]
+        h5_group.attrs[ParamsRaman.PIN_HOLE_SIZE.value] = instrument[ParamsRaman.PIN_HOLE_SIZE.value]   
+                #print(instrument["optical_paths"]) 
+        _g_ops = h5_group.create_group(self._tag_optical_paths)
+        for op in instrument[self._tag_optical_paths]:
+            _g_op = _g_ops.create_group(op[self._tag_id])
+            _g_op.attrs[ParamsRaman.COLLECTION_OPTICS.value] = op[ParamsRaman.COLLECTION_OPTICS.value]
+            _g_op.attrs[ParamsRaman.GRATINGS.value] = op[ParamsRaman.GRATINGS.value]
+            _g_op.attrs[ParamsRaman.SLIT_SIZE.value] = op[ParamsRaman.SLIT_SIZE.value]
+            _g_op.attrs[ParamsRaman.PIN_HOLE_SIZE.value] = op[ParamsRaman.PIN_HOLE_SIZE.value] 
+
+
+    def metadata2h5(self,metadata,h5file): 
+        _g_instruments = h5file.create_group(self._tag_instrument)
+        for instrument in metadata[self._tag_instrument]:
+           #print(instrument)
+            _g_instrument = _g_instruments.create_group(self.get_instrument_id(instrument))
+            self.instrument2h5(instrument,_g_instrument)
+
+    def h52instrument(self,group_instrument):
+        optical_paths = []
+    
+        instrument = {
+            "id" : group_instrument.attrs["id"],
+            ParamsRaman.BRAND.value : group_instrument.attrs[ParamsRaman.BRAND.value],
+            ParamsRaman.MODEL.value : group_instrument.attrs[ParamsRaman.MODEL.value],
+            ParamsRaman.WAVELENGTH.value : int(group_instrument.attrs[ParamsRaman.WAVELENGTH.value]),
+            ParamsRaman.COLLECTION_OPTICS.value : group_instrument.attrs[ParamsRaman.COLLECTION_OPTICS.value].tolist(), #converts to python types
+            ParamsRaman.SLIT_SIZE.value :  group_instrument.attrs[ParamsRaman.SLIT_SIZE.value].tolist(),
+            ParamsRaman.GRATINGS.value : group_instrument.attrs[ParamsRaman.GRATINGS.value].tolist(),
+            ParamsRaman.PIN_HOLE_SIZE.value :  group_instrument.attrs[ParamsRaman.PIN_HOLE_SIZE.value].tolist(),
+            self._tag_optical_paths : optical_paths
+        }
+                
+        _g_ops= group_instrument[self._tag_optical_paths]
+        for op in _g_ops.keys():
+            _g_op=_g_ops[op]
+            optical_path = {}
+            optical_path["id"] = op
+            optical_path[ParamsRaman.COLLECTION_OPTICS.value] = _g_ops[op].attrs[ParamsRaman.COLLECTION_OPTICS.value]
+            optical_path[ParamsRaman.SLIT_SIZE.value] = int(_g_ops[op].attrs[ParamsRaman.SLIT_SIZE.value])
+            optical_path[ParamsRaman.GRATINGS.value] = int(_g_ops[op].attrs[ParamsRaman.GRATINGS.value])
+            optical_path[ParamsRaman.PIN_HOLE_SIZE.value] = int(_g_ops[op].attrs[ParamsRaman.PIN_HOLE_SIZE.value] )
+            optical_paths.append(optical_path) 
+        return instrument                         
+
+    def h52metadata(self,infile,h5module=h5py): 
+
+        metadata = { self._tag_instrument : []}
+        with h5module.File(infile,"r") as f:
+            _g_instruments = f[self._tag_instrument]
+            for key in _g_instruments.keys():
+                instrument = self.h52instrument(_g_instruments[key])
+                metadata[self._tag_instrument].append(instrument)
+                
+        return metadata
+                  
