@@ -76,6 +76,7 @@ import h5pyd
 class ProcessDomain(Resource):
 
     def __init__(self):
+        self.paths = ["investigation","provider","instrument","wavelength","optical_path","sample","laser_power"]
         pass
 
 
@@ -133,19 +134,12 @@ class ProcessDomain(Resource):
 # curl http://127.0.0.1:5000/dataset -F "file=@PST10_iR532_Probe_005_3000msx7.spc" -F "provider=FNMT-Madrid" -F "investigation=Round_Robin_1" -F "instrument=BWTek" -F "wavelength=532" -F "optical_path=Probe" -F "sample=PST10" -u user
 # {"name": "POST /domain", "result": "/Round_Robin_1/FNMT-Madrid/BWTek/532/Probe/PST10_iR532_Probe_005_3000msx7.cha", "error": null, "errorCause": null, "completed": "Mon Dec  6 16:14:21 2021", "started": "Mon Dec  6 16:14:21 2021", "status": "TaskStatus.Completed"}
     def post(self):
-        #print(request.headers)
-        #print("data\t",request.data)
-        #print("\nargs\n",request.args)
-        #print("\nform\n",request.form)
-        #print(request.endpoint)
-        #print(request.method)
-        #print(request.remote_addr)
         tr = TaskResult("POST /dataset")
 
-        paths = ["investigation","provider","instrument","wavelength","optical_path","sample","laser_power"]
+        
         params = {}
       
-        for p in paths:
+        for p in self.paths:
             params[p] = None
             try:
                 params[p]  = request.form[p]
@@ -156,7 +150,7 @@ class ProcessDomain(Resource):
                 return tr.to_dict(), 400   
         #print(params)
         folder = ""
-        for p in paths:
+        for p in self.paths:
             if p=="sample":
                 continue;
             if p=="laser_power":
@@ -207,23 +201,18 @@ class ProcessDomain(Resource):
 
 from flask.json import JSONEncoder
 
-class StudyRegistration(Resource):
+class StudyRegistration(ProcessDomain):
     
     def __init__(self):
         pass
 
-    
     def get(self):
-        tr = None
-        try:
-            domain = request.args.get('domain')
-            tr = TaskResult(name=domain)
-        except:
-            return {"err" : "domain parameter missing"}, 400
-        try:
-            raw = request.args.get('raw')
-        except:
-            raw=False
+        return super().get();
+
+    def post(self):
+        tr = TaskResult("POST /metadata")
+        tr.set_completed("TBD")
+        return tr.to_dict(), 200 
 
 
 app = Flask(__name__)
@@ -251,6 +240,6 @@ api = Api(app)
 
 api.add_resource(ProcessDomain, '/dataset')
 api.add_resource(Algorithm, '/algorithm')
-
+api.add_resource(StudyRegistration, '/metadata')
 if __name__ == '__main__':
     app.run(debug=True)  # run our Flask app
