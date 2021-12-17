@@ -212,10 +212,12 @@ class ParamsRaman(Enum):
     COLLECTION_OPTICS="collection_optics"
     SLIT_SIZE = "slit_size"
     PIN_HOLE_SIZE = "pin_hole_size"
+    COLLECTION_FIBRE_DIAMETER = "collection_fibre_diameter"
+    OTHER = "param_other"
 
 class StudyRegistration:
     def __init__(self):
-        self._tag_instrument = "instruments"
+        self._tag_instrument = "instrument"
         self._tag_optical_paths = "optical_paths"
         self._tag_id = "id"
 
@@ -224,8 +226,34 @@ class StudyRegistration:
         if self._tag_id in instrument:
             id = instrument[self._tag_id]
         else:
-            id = "{}_{}_{}".format(instrument[ParamsRaman.BRAND.value],instrument[ParamsRaman.MODEL.value],instrument[ParamsRaman.WAVELENGTH.value])
+            id = "{}_{}".format(instrument[ParamsRaman.BRAND.value].upper(),instrument[ParamsRaman.MODEL.value])
         return id
+
+    def create_metadata(self,investigation,provider,
+        brand = "",model="",wavelength=-1,collection_optics = [],gratings=[],slit_size=[],pin_hole_size=[]):
+        instrument = self.create_instrument(brand,model,wavelength,collection_optics,gratings,slit_size,
+            pin_hole_size);
+        
+        instrument["id"] = self.get_instrument_id(instrument)
+        print(instrument)
+        return {
+            "investigation" : investigation,
+            "provider" : provider,
+            self._tag_instrument : instrument
+        }
+    def create_instrument(self,brand = "",model="",wavelength=-1,collection_optics = [],gratings=[],slit_size=[],pin_hole_size=[]):
+        return {
+            
+ 			ParamsRaman.BRAND.value: brand,
+ 			ParamsRaman.MODEL.value: model,
+ 			ParamsRaman.WAVELENGTH.value: wavelength,
+ 			ParamsRaman.COLLECTION_OPTICS.value: collection_optics,
+ 			ParamsRaman.GRATINGS.value: gratings,
+ 			ParamsRaman.SLIT_SIZE.value: slit_size,
+ 			ParamsRaman.PIN_HOLE_SIZE.value: pin_hole_size,
+ 			"collection fibre diameter": []
+        }
+
 
     def instrument2h5(self,instrument,h5_group):
         h5_group.attrs[self._tag_id] = self.get_instrument_id(instrument)
@@ -247,17 +275,20 @@ class StudyRegistration:
 
 
     def metadata2h5(self,metadata,h5file): 
-        _g_instruments = h5file.create_group(self._tag_instrument)
-        for instrument in metadata[self._tag_instrument]:
-           #print(instrument)
-            _g_instrument = _g_instruments.create_group(self.get_instrument_id(instrument))
+        h5file.attrs["investigation"] = metadata["investigation"]
+        h5file.attrs["provider"] = metadata["provider"]
+        try:
+            _g_instrument = h5file.create_group(self._tag_instrument)
+            instrument = metadata[self._tag_instrument]
             self.instrument2h5(instrument,_g_instrument)
+        except Exception as err:
+            print(err)
 
     def h52instrument(self,group_instrument):
         optical_paths = []
     
         instrument = {
-            "id" : group_instrument.attrs["id"],
+            self._tag_id : group_instrument.attrs[self._tag_id],
             ParamsRaman.BRAND.value : group_instrument.attrs[ParamsRaman.BRAND.value],
             ParamsRaman.MODEL.value : group_instrument.attrs[ParamsRaman.MODEL.value],
             ParamsRaman.WAVELENGTH.value : int(group_instrument.attrs[ParamsRaman.WAVELENGTH.value]),
