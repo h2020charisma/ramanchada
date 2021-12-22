@@ -7,8 +7,7 @@ from itertools import cycle
 import numpy as np
 import matplotlib.pyplot as plt
 import re
-import datetime
-
+import pandas as pd
 
 def hqi(y1, y2):
     # Hit quality index (equivalent to cross-correlation)
@@ -19,7 +18,7 @@ def hqi(y1, y2):
 def lims(x, x_min, x_max):
     y_min, y_max = np.argmin(np.abs(x-x_min)), np.argmin(np.abs(x-x_max))
     def l(Y):
-        return Y[...,y_min:y_max]
+        return Y[...,y_min:y_max+1]
     return l
 
 def interpolation_within_bounds(cal_x, cal_y, poly_degree):

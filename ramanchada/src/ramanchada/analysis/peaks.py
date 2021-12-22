@@ -43,7 +43,7 @@ def find_spectrum_peaks(x, y, prominence=.05, sg=11, x_min=25, x_max=10000, sort
     P['intensity'] = y[integer_positions]
     P['prominence'] = props_dict['prominences']
     P['FWHM'] = widths_in_x_units
-    P['Gauss area'] = P['FWHM']/2.3548*(2*np.pi)**.5
+    P['Gauss area'] = P['intensity']*P['FWHM']/2.3548*(2*np.pi)**.5
     return P.sort_values(by=[sort_by], ascending=False, ignore_index=True)
 
 def spectrum_peak_widths(x, y, pos_in_x_units, rel_height=0.5):
@@ -77,7 +77,8 @@ def fit_spectrum_peaks_pos(x, y, pos_in_x_units, method, interval_width=2, show=
     x_fit_pos = []
     x_fit_width = []
     x_fit_area = []
-    methods = {'par': parabola_fit, 'voigt': voigt_fit, 'vg': gauss_voigt_fit}
+    methods = {'voigt': voigt_fit, 'lorentz': lorentz_fit, 'pearson': pearson4_fit, 
+        'beta': beta_profile_fit, 'par': parabola_fit, 'gl': gauss_lorentz_fit, 'dvoigt': double_voigt_fit}
     for p, w in zip(pos_in_x_units, half_peak_widths):
         l = lims(x, p-interval_width*w, p+interval_width*w)
         pos, width, area = methods[method](l(x), l(y), show=show)
@@ -94,38 +95,127 @@ def voigt_fit(x, y, show=False):
     The width and area are calculated analytically after Olivero and Longbothum
     """
     # Estimate starting parameters
-    amp = y.max()-y.min()*10
+    y0 = y.min()
+    amp = (y.max()-y.min()) * 10
     cen = x[y.argmax()]
     # sigma should be ~1/2 of FWHM
-    fwhm = (x.max() - x.min()) / 2
+    fwhm = find_spectrum_peaks(x, y)['FWHM'][0]
     sigma = .5*fwhm
     gamma = .5*fwhm
     # Do fit
     try:
-        popt, pcov = curve_fit(voigt, x, y, p0=[amp, cen, sigma, gamma])
+        popt, pcov = curve_fit(voigt, x, y, p0=[y0, amp, cen, sigma, gamma])
         pars = popt
         fit_x = np.linspace(x.min(), x.max(), 1000)
         error = np.sum(np.abs(voigt(x, *pars) - y))/np.sum(y)
         fitted_y = voigt(fit_x, *pars)
         fitpos = fit_x[fitted_y.argmax()]
-        # Approx. for with (Olivero and Longbothum)
-        fwhm_lorentz = 2*pars[3]
-        fwhm_gauss = np.sqrt(8*np.log(2)) * pars[2]
+        # Approx. for width (Olivero and Longbothum)
+        fwhm_lorentz = 2*pars[4]
+        fwhm_gauss = np.sqrt(8*np.log(2)) * pars[3]
         width = 2* 0.5346*fwhm_lorentz + np.sqrt(0.2166*fwhm_lorentz**2 + fwhm_gauss)
-        area = pars[0]
+        area = pars[1]
         if show:
-            plt.figure()
-            plt.plot(x, y, 'ko', label = "data")
-            plt.plot(fit_x, voigt(fit_x, *pars), 'r-', label = "Voigt, err = " + str(int(error*100)) + "%")
-            plt.plot(fitpos, voigt(fitpos, *pars), 'r^')
-            plt.legend()
-            plt.xlabel("Raman shift [rel. 1/cm]")
-            plt.ylabel("intensity")
-            plt.title("Peak at " + '{:4.2f}'.format(fitpos) + "rel 1/cm")
-            plt.show()
+            plot_fit_curve(x, y, fit_x, voigt, pars, fitpos, error)
     except RuntimeError:
         return np.nan, np.nan, np.nan
-    return fitpos, width, area
+    #return fitpos, width, area
+    return get_function_properties(x, voigt, pars)
+
+def lorentz_fit(x, y, show=False):
+    """
+    fitpos, width = voigt_fit(x, y, show=False, d=0)
+    Fits a Voigt profile.
+    If show is True, the fits and resulting maxima are plotted.
+    The width and area are calculated analytically after Olivero and Longbothum
+    """
+    # Estimate starting parameters
+    y0 = y.min()
+    cen = x[y.argmax()]
+    # sigma should be ~1/2 of FWHM
+    wid = find_spectrum_peaks(x, y)['FWHM'][0]/2
+    amp = (y.max()-y.min())*wid
+    # Do fit
+    try:
+        popt, pcov = curve_fit(lorentz, x, y, p0=[y0, amp, cen, wid])
+        pars = popt
+        fit_x = np.linspace(x.min(), x.max(), 1000)
+        error = np.sum(np.abs(lorentz(x, *pars) - y))/np.sum(y)
+        fitted_y = lorentz(fit_x, *pars)
+        fitpos = fit_x[fitted_y.argmax()]
+        width = (pars[2]**2 + pars[3]*pars[2])**.5 - (pars[2]**2 - pars[3]*pars[2])**.5
+        area = pars[1]
+        if show:
+            plot_fit_curve(x, y, fit_x, lorentz, pars, fitpos, error)
+    except RuntimeError:
+        return np.nan, np.nan, np.nan
+    #return fitpos, width, area
+    return get_function_properties(x, lorentz, pars)
+
+def pearson4_fit(x, y, show=False):
+    """
+
+    """
+    # Estimate starting parameters
+    y0 = y.min()
+    k = y.max()-y.min()
+    # peak position (a1);
+    a1 = x[y.argmax()]
+    # width (a2);
+    a2 = find_spectrum_peaks(x, y)['FWHM'][0]
+    """parameter a3 determines whether the peak shape is flatter (a3>1) or
+    sharper (a3<1) than a Lorentzian distribution"""
+    a3 = 1
+    """peak asymmetry is determined by a4, with fronted peaks having
+    a positive a4 and the tailed peaks having a negative a4."""
+    a4 = 0
+    # Do fit
+    try:
+        popt, pcov = curve_fit(pearson4, x, y, p0=[y0, a1, a2, a3, a4, k])
+        pars = popt
+        fit_x = np.linspace(x.min(), x.max(), 1000)
+        error = np.sum(np.abs(pearson4(x, *pars) - y))/np.sum(y)
+        fitted_y = pearson4(fit_x, *pars)
+        fitpos = fit_x[fitted_y.argmax()]
+        width = pars[2]
+        area = pars[5]
+        if show:
+            plot_fit_curve(x, y, fit_x, pearson4, pars, fitpos, error)
+    except RuntimeError:
+        return np.nan, np.nan, np.nan
+    #return fitpos, width, area
+    return get_function_properties(x, pearson4, pars)
+
+def beta_profile_fit(x, y, show=False):
+    """
+
+    """
+    # Estimate starting parameters
+    y0 = y.min()
+    amp = y.max()-y.min()
+    # peak position (a1);
+    a1 = x[y.argmax()]
+    # data scaling (a2)
+    a2 = find_spectrum_peaks(x, y)['FWHM'][0]/2
+    """parameterized by two positive shape parameters alpha and beta:"""
+    alpha = 1.5
+    beta = 1.5
+    # Do fit
+    try:
+        popt, pcov = curve_fit(beta_profile, x, y, p0=[y0, amp, alpha, beta, a1, a2])
+        pars = popt
+        fit_x = np.linspace(x.min(), x.max(), 1000)
+        error = np.sum(np.abs(beta_profile(x, *pars) - y))/np.sum(y)
+        fitted_y = beta_profile(fit_x, *pars)
+        fitpos = fit_x[np.nan_to_num(fitted_y).argmax()]
+        width = pars[5] # data scaling (a2)
+        area = pars[1] # is equal to amp since distribution is normalized
+        if show:
+            plot_fit_curve(x, y, fit_x, beta_profile, pars, fitpos, np.nan_to_num(error))
+    except RuntimeError:
+        return np.nan, np.nan, np.nan
+    #return fitpos, width, area
+    return get_function_properties(x, beta_profile, pars)
 
 def double_voigt_fit(x, y, show=False):
     """
@@ -135,40 +225,34 @@ def double_voigt_fit(x, y, show=False):
     The width and area are calculated analytically after Olivero and Longbothum
     """
     # Estimate starting parameters
-    amp = y.max()-y.min()*10
-    cen1, cen2 = x[0], x[-1]
+    y0 = y.min()/2
+    amp = (y.max()-y.min()) * 10
+    cen1, cen2 = x[2], x[-3]
     # sigma should be ~1/2 of FWHM
-    fwhm = (x.max() - x.min()) / 2
+    fwhm = find_spectrum_peaks(x, y)['FWHM'][0]/2
     sigma = .5*fwhm
     gamma = .5*fwhm
     # Do fit
     try:
-        popt, pcov = curve_fit(double_voigt, x, y, p0=[amp, cen1, sigma, gamma, amp, cen2, sigma, gamma])
+        popt, pcov = curve_fit(double_voigt, x, y, p0=[y0, amp, cen1, sigma, gamma, amp, cen2, sigma, gamma])
         pars = popt
         fit_x = np.linspace(x.min(), x.max(), 1000)
         error = np.sum(np.abs(double_voigt(x, *pars) - y))/np.sum(y)
         fitted_y = double_voigt(fit_x, *pars)
         fitpos = fit_x[fitted_y.argmax()]
         # Approx. for with (Olivero and Longbothum)
-        fwhm_lorentz = np.array([2*pars[3], 2*pars[3+4]])
-        fwhm_gauss = np.array([np.sqrt(8*np.log(2)) * pars[2], np.sqrt(8*np.log(2)) * pars[2+4]])
+        fwhm_lorentz = max( [2*pars[4], 2*pars[4+4]] )
+        fwhm_gauss = max( [np.sqrt(8*np.log(2)) * pars[3], np.sqrt(8*np.log(2)) * pars[3+4]] )
         width = 2* 0.5346*fwhm_lorentz + np.sqrt(0.2166*fwhm_lorentz**2 + fwhm_gauss)
-        area = np.array([pars[0], pars[0+4]])
+        area = np.array([pars[1], pars[1+4]])
         if show:
-            plt.figure()
-            plt.plot(x, y, 'ko', label = "data")
-            plt.plot(fit_x, double_voigt(fit_x, *pars), 'r-', label = "Double Voigt, err = " + str(int(error*100)) + "%")
-            plt.plot(fitpos, double_voigt(fitpos, *pars), 'r^')
-            plt.legend()
-            plt.xlabel("Raman shift [rel. 1/cm]")
-            plt.ylabel("intensity")
-            plt.title("Peak at " + '{:4.2f}'.format(fitpos) + "rel 1/cm")
-            plt.show()
+            plot_fit_curve(x, y, fit_x, double_voigt, pars, fitpos, error)
     except RuntimeError:
         return np.nan, np.nan, np.nan
-    return list(fitpos), list(width), list(area)
+    #return fitpos, width, area
+    return get_function_properties(x, double_voigt, pars)
 
-def gauss_voigt_fit(x, y, show=False):
+def gauss_lorentz_fit(x, y, show=False):
     """
     fitpos, width, area = gauss_voigt_fit(x, y, show=False, d=0)
     Fits the sum of a Gauss + Lorentz, with independent parameters for each function.
@@ -178,37 +262,31 @@ def gauss_voigt_fit(x, y, show=False):
     If show is True, the fits and resulting maxima are plotted.
     """
     # Estimate starting parameters
+    y0 = y.min()/2
     ampG1 = y.max()-y.min()
     cenG1 = x[y.argmax()]
     # sigma should be ~1/2 of FWHM
-    fwhm = (x.max() - x.min()) / 2
+    fwhm = find_spectrum_peaks(x, y)['FWHM'][0]
     sigmaG1 = .5*fwhm
     ampL1 = y.max()-y.min()
     cenL1 = x[y.argmax()]
-    widL1 = .5*fwhm
+    widL1 = fwhm
     # Do fit
     try:
-        popt, pcov = curve_fit(gauss_voigt, x, y, p0=[ampG1, cenG1, sigmaG1, ampL1, cenL1, widL1])
+        popt, pcov = curve_fit(gauss_lorentz, x, y, p0=[y0, ampG1, cenG1, sigmaG1, ampL1, cenL1, widL1])
         pars = popt
         fit_x = np.linspace(x.min(), x.max(), 1000)
-        error = np.sum(np.abs(gauss_voigt(x, *pars) - y))/np.sum(y)
-        fitted_y = gauss_voigt(fit_x, *pars)
+        error = np.sum(np.abs(gauss_lorentz(x, *pars) - y))/np.sum(y)
+        fitted_y = gauss_lorentz(fit_x, *pars)
         fitpos = fit_x[fitted_y.argmax()]
         width = spectrum_peak_widths(fit_x, fitted_y, [fitpos], rel_height=.5)[0]
         area = np.trapz(fitted_y, fit_x)
         if show:
-            plt.figure()
-            plt.plot(x, y, 'ko', label = "data")
-            plt.plot(fit_x, gauss_voigt(fit_x, *pars), 'r-', label = "Voigt, err = " + str(int(error*100)) + "%")
-            plt.plot(fitpos, gauss_voigt(fitpos, *pars), 'r^')
-            plt.legend()
-            plt.xlabel("Raman shift [rel. 1/cm]")
-            plt.ylabel("intensity")
-            plt.title("Peak at " + '{:4.2f}'.format(fitpos) + "rel 1/cm")
-            plt.show()
+            plot_fit_curve(x, y, fit_x, gauss_lorentz, pars, fitpos, error)
     except RuntimeError:
         return np.nan, np.nan, np.nan
-    return fitpos, width, area
+    #return fitpos, width, area
+    return get_function_properties(x, gauss_lorentz, pars)
 
 def parabola_fit(x, y, show=False):
     """
@@ -242,13 +320,63 @@ def parabola_fit(x, y, show=False):
     area = np.trapz(new_y, new_x)
     return fitpos, width, area
 
-def voigt(x, amp, cen, sigma, gamma):
-    return amp * voigt_profile(x-cen, sigma, gamma)
+def get_function_properties(x, function, pars):
+    # make x vector with 5x peak range
+    x_range = np.ptp(x)
+    x_full = np.arange(x.mean()-5*x_range, x.mean()+5*x_range)
+    x_fine = np.linspace(x.min(), x.max(), 1000)
+    # pars[0] is baseline. Set to zero!
+    pars[0] = 0
+    # calculate theoretical peak
+    y_full = np.nan_to_num(function(x_full, *pars))
+    y_fine = np.nan_to_num(function(x_fine, *pars))
+    # area is numerical integral
+    #area = np.trapz(y_fine, x_fine)
+    # peak pos is at max
+    peak_pos = x_fine[y_fine.argmax()]
+    # get width from y_full, which is already scaled at 1 1/cm
+    width, _, _, _ = peak_widths(y_full, [y_full.argmax()])
+    width = width[0]
+    # approximate area as Gaussian.
+    area = y_fine.max() * width/2.3548*(2*np.pi)**.5
+    return peak_pos, width, area
 
-def double_voigt(x, amp1, cen1, sigma1, gamma1, amp2, cen2, sigma2, gamma2):
-    return voigt(x, amp1, cen1, sigma1, gamma1) + voigt(x, amp2, cen2, sigma2, gamma2)
+def plot_fit_curve(x, y, fit_x, function, pars, fitpos, error):
+    plt.figure()
+    plt.plot(x, y, 'ko', label = "data")
+    plt.plot(fit_x, function(fit_x, *pars), 'r-', label = f'{function.__name__}, err = {error*100:.1f} %')
+    plt.plot(fitpos, function(fitpos, *pars), 'r^')
+    plt.legend()
+    plt.xlabel("Raman shift [rel. 1/cm]")
+    plt.ylabel("intensity")
+    plt.title("Peak at " + '{:4.2f}'.format(fitpos) + "rel 1/cm")
+    plt.show()
 
-def gauss_voigt(x, ampG1, cenG1, sigmaG1, ampL1, cenL1, widL1):
-    return (ampG1*(1/(sigmaG1*(np.sqrt(2*np.pi))))*(np.exp(-((x-cenG1)**2)/((2*sigmaG1)**2)))) +\
-              ((ampL1*widL1**2/((x-cenL1)**2+widL1**2)) )
+def voigt(x, y0, amp, cen, sigma, gamma):
+    return y0 + amp * voigt_profile(x-cen, sigma, gamma)
+
+def gauss(x, y0, amp, cen, sigma):
+    return y0 + (amp*(1/(sigma*(np.sqrt(2*np.pi))))*(np.exp(-((x-cen)**2)/((2*sigma)**2))))
+
+def lorentz(x, y0, amp, cen, wid):
+    #return y0 + amp * 0.25/cen**2 * 1./( (x-cen)**2 + wid**2 /4 )
+    #return y0 + amp * 1./( (x**2-cen**2)**2 + wid**2 * cen**2 )
+    return y0 + ((amp*wid**2/((x-cen)**2+wid**2)) )
+
+def pearson4(x, y0, a1, a2, a3, a4, k):
+    xx = (x-a1)/a2
+    return y0 + k*( 1+xx**2 )**-a3 * np.exp( -a4 * np.arctan(xx) )
+
+def beta_profile(x, y0, amp, alpha, beta, a1, a2):
+    X = (x-a1)/a2
+    mode = (alpha-1)/(alpha+beta-2)
+    term_1 = (X+mode)**(alpha-1) * (1-X-mode)**(beta-1)
+    term_2 = mode**(alpha-1) * (1-mode)**(beta-1)
+    return y0 + amp * term_1 / term_2
+
+def double_voigt(x, y0, amp1, cen1, sigma1, gamma1, amp2, cen2, sigma2, gamma2):
+    return voigt(x, y0, amp1, cen1, sigma1, gamma1) + voigt(x, y0, amp2, cen2, sigma2, gamma2)
+
+def gauss_lorentz(x, y0, ampG1, cenG1, sigmaG1, ampL1, cenL1, widL1):
+    return y0 + gauss(x, y0, ampG1, cenG1, sigmaG1) + lorentz(x, y0, ampL1, cenL1, widL1)
               

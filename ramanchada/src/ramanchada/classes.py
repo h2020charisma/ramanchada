@@ -10,7 +10,8 @@ from scipy.interpolate import interp1d
 from copy import deepcopy
 import os
 import time
-from IPython.display import display
+import matplotlib.style as plot_style
+import seaborn as sns
 # ramanchada imports
 from ramanchada.decorators import specstyle, log, change_y, change_x, mark_peaks
 from ramanchada.pre_processing.baseline import baseline_model, xrays
@@ -156,7 +157,7 @@ class Spectrum(Curve):
     A curve with peaks that can be located and analyzed.
     Inherits from Curve.
     """
-    def __init__(self, data, x_column_name, y_column_name,
+    def __init__(self, data, x_column_name, y_column_name, label=None,
                  x_label='spectral index', y_label='intensity [a.u.]'):
         """
 
@@ -287,19 +288,41 @@ class Spectrum(Curve):
         """
         self.baseline = baseline_model(self.y, method=method, lam=lam, p=p, niter=niter, smooth=smooth)
     @log
-    def remove_baseline(self):
+    def remove_baseline(self, method='als', lam=1e5, p=0.001, niter=100, smooth=7):
         """
-        Subtracts baseline model stored in .baseline from y data (if it exists).
+        Fits and removes a flourescent background model.
+
+        Parameters
+        ----------
+        method : str, optional
+            > Model fitting method as described in  
+            *Ryabchykov, O., Guo, S., & Bocklitz, T. (2019). Analyzing Raman spectroscopic data. Physical Sciences Reviews, 4(2), 1–16. https://doi.org/10.1515/psr-2017-0043.*  
+            - 'als': Asymmetric least squares.  
+            After *He, S., Zhang, W., Liu, L., Huang, Y., He, J., Xie, W., … P. W.-A., & 2014,  undefined. (n.d.). Baseline correction for Raman spectra using an improved asymmetric least squares method. Pubs.Rsc.Org.*  
+            - 'snip': statistics-sensitive non-linear iterative peak clipping.  
+            After *Caccia, M., Ebolese, A., Maspero, M., Santoro, R., Tecnologia, A., Locatelli, M., Pieracci, M., Tintori, C., & Caen, S. A. (n.d.). Background removal procedure based on the SNIP algorithm for γ − ray spectroscopy with the CAEN Educational Kit. CAEN Tools for Discovery Educational Note ED3163, 1–4.*    
+            The default is 'als'.
+            
+        lam : double, optional
+            > lambda parameter for ALS. The default is 1e5.
+            
+        p : double, optional
+            > p parameter for ALS. The default is 0.001.
+            
+        niter : int, optional
+            > Number of iterations. The default is 100.
+            
+        smooth : int, optional
+            > Kernel length for Wien filtering prior to ALS baseline fitting. The default is 7.
 
         Returns
         -------
         None.
 
         """
-        if hasattr(self, 'baseline'):
-            self.y -= self.baseline
-        else:
-            pass
+        self.fit_baseline(method='als', lam=1e5, p=0.001, niter=100, smooth=7)
+        self.y -= self.baseline
+            
     @change_x
     @log
     def interpolate_x(self, reference_spectrum=[]):
@@ -344,37 +367,51 @@ class Spectrum(Curve):
         self_copy = deepcopy(self)
         self_copy.interpolate_x(reference_spectrum)
         return hqi(self_copy.y, reference_spectrum.y)
+    def math(self, spectrum, operator='+'):
+        ops = {'+': np.add,
+            '-': np.subtract,
+            '*': np.multiply,
+            '/': np.divide}
+        s = deepcopy(spectrum)
+        s.interpolate_x(self)
+        self.y = ops[operator](self.y, s.y)
+
 
 class RamanSpectrum(Spectrum):
     """
     Class for a Raman Spectrum, which can have metadata and can be calibrated.
-    Inherits from Spectrum.
+    Inherits from *Spectrum*.
     """
-    def __init__(self, source_path,
-             x_label='Raman shift [rel. 1/cm]', y_label='counts [1]'):
+    def __init__(self, data, x_column_name, y_column_name,
+                 x_label='Raman Shift [rel 1/cm]', y_label='intensity [a.u.]'):
         """
 
         Parameters
         ----------
-        source_path : str
-            > Path to spectrum data file that is to be read.
-            If extension is .cha, an existing CHADA file will be opened.
-            If not, a native data file is imported and a CHADA file with the same name generated in the same directory.
+        data : pandas DataFrame
+            > Data is imported as a DataFrame. This can come from common data formats such as csv or Excel.
+            
+        x_column_name : str
+            > Name of the column holding the x data.
+            
+        y_column_name : str
+            > Name of the column holding the y data.
             
         x_label : str, optional
-            > Label for x data. The default is 'Raman shift [rel. 1/cm]'.
+            > Label for x data. The default is 'spectral index'.
             
         y_label : TYPE, optional
-            > Label for y data The default is 'counts [1]'.
+            > Label for y data The default is 'intensity [a.u.]'.
 
         Returns
         -------
         None.
 
         """
-        self.x, self.y, self.meta = import_native(source_path)
+        super().__init__(data, x_column_name, y_column_name)
         self.x_label, self.y_label = x_label, y_label
         self.time = time.ctime()
+        self.meta = {}
     @log
     def add_metadata(self, meta_dict):
         """
@@ -390,7 +427,7 @@ class RamanSpectrum(Spectrum):
         None.
 
         """
-        self.meta = meta_dict
+        self.meta.update(meta_dict)
     @change_x
     @log
     def calibrate(self, calibration):
@@ -878,7 +915,70 @@ class SpectrumGroup:
         # Make list of filenames without path and ext.
         data_labels = [os.path.splitext(self.data_labels)[0] for s in self.spectra]
         return labels_from_filenames(data_labels, pivot_string=pivot_string, pos=pos, numeric=numeric, length=length)
+
+
+class RamanGroup():
     
+    def __init__(self, spectra, interpolate=True):
+        first_spectrum = spectra[0]
+        if interpolate:
+            first_spectrum.interpolate_x()
+        self.x_label, self.y_label = first_spectrum.x_label, first_spectrum.y_label
+        S = spectrum_to_frame(first_spectrum)
+        self.data = pd.DataFrame(S)
+        if len(spectra) > 1:
+            self.add(spectra[1:])
+            
+    def add_one(self, spectrum):
+        S = spectrum_to_frame(spectrum).T
+        # Erst die beiden AtrSpektren (Series) als Vereinigung zusammenfügen
+        #merged = self.data.T.merge(S, left_on=self.data.T.index.name, right_on=S.index.name, how='outer')
+        merged = self.data.T.merge(S, left_index=True, right_index=True, how='outer')
+        # Dann alle NaNs durch Interpolation mit Zahlen füllen und wieder auf die ursprünglichen Kanäle reduzieren (reindex)
+        merged = merged.interpolate('quadratic').reindex(self.data.T.index).fillna(0)
+        self.data = merged.T
+    
+    def add(self, spectra):
+        [ self.add_one(s) for s in spectra ]
+        
+    def set_targets(self, target_dict):
+        self.targets = pd.DataFrame(index=self.data.index, data=target_dict)
+        
+    def extract(self, no_of_spectrum):
+        return line_to_spectrum(self.data, no_of_spectrum)
+    
+    def process(self, method, *args, **kwargs):
+        self.data = process_DF(self.data, method, *args, **kwargs)
+        
+    @property
+    def x(self):
+        return np.array(self.data.columns)
+    
+    @property
+    def y(self):
+        return self.data.to_numpy()
+        
+    def __repr__(self):
+        info = f'{self.__class__.__name__} containing {len(self.data)} spectra.'
+        if hasattr(self, 'targets'):
+            info += '\n' + f'{len(self.targets)} added'
+        return info
+
+    def plot(self, target=None, xrange = [1e-9, 1e9], legend=False):
+        plot_style.use('bmh')
+        plt.figure(figsize=[8,4])
+        if target:
+            #target = 'times'
+            arrays = [self.targets[target], self.targets.index]
+            DF = self.data.copy()
+            DF.index = pd.MultiIndex.from_arrays(arrays, names=(target, 'file'))
+            sns.lineplot(data=DF.T[xrange[0]:xrange[1]], ci='sd', n_boot=5, dashes=False)
+        else:
+            sns.lineplot(data=self.data.T[xrange[0]:xrange[1]], dashes=False, legend=legend)
+        plt.ylabel(self.y_label)
+        plt.show()
+
+
 class RamanCalibration(Curve):
     """
     Object containing a Raman x axis calibration.
@@ -933,6 +1033,7 @@ class RamanCalibration(Curve):
         plt.ylabel(self.y_label)
         plt.show()
 
+
 class RamanMTF(Curve):
     """
     Object containing an MTF model in Fourier space. The reciprocal coordinate is 1/pixels.
@@ -941,6 +1042,7 @@ class RamanMTF(Curve):
         super().__init__(data, 'Nyquist frequency', 'amplitude')
         # k + CTF come as 1024 px vectors.
 
+
 class RamanCTF(Curve):
     """
     Object containing an MTF model in Fourier space. The reciprocal coordinate is 1/x units.
@@ -948,7 +1050,8 @@ class RamanCTF(Curve):
     def __init__(self, data):
         super().__init__(data, 'spatial frequency', 'amplitude')
         # k + CTF come as 1024 px vectors.
-                
+
+
 class MetaData(dict):
     """
     Object containing meta data as a dict.
@@ -957,3 +1060,42 @@ class MetaData(dict):
     # Can be loaded or generated as dict, independently from data
 #    - from_file
 #    - clean
+
+
+def spectrum_to_frame(spectrum):
+    if hasattr(spectrum, 'meta'):
+        column_name = spectrum.meta['Original file']
+    else:
+        column_name = 'intensity'
+    D = pd.DataFrame({column_name: spectrum.y})
+    D.index = spectrum.x
+    D.index.name = spectrum.x_label
+    D.attrs = {'y_label': spectrum.y_label}
+    return D.T
+
+def spectrum_to_series(spectrum):
+    S = pd.Series(data=spectrum.y, name=spectrum.meta['Original file'])
+    S.index = spectrum.x
+    S.index.name = spectrum.x_label
+    return S
+
+def line_to_spectrum(DF, no_line):
+    S = DF.iloc[no_line]
+    S.name = 'y'
+    S = S.to_frame()
+    S['x'] = S.index
+    return Spectrum(S, x_column_name='x', y_column_name='y')
+
+def process_DF(DF, method, *args, **kwargs):
+    S = []
+    for row in range(len(DF)):
+        s = line_to_spectrum(DF, row)
+        func = getattr(s, method)
+        func(*args, **kwargs)
+        S.append(s.y)
+    Y = np.array(S)
+    DF_proc = pd.DataFrame(Y, columns = s.x)
+    DF_proc.columns.name = DF.columns.name
+    DF_proc.index = DF.index
+    return DF_proc
+
