@@ -81,6 +81,13 @@ class ProcessDomainResource(Resource):
         
         pass
 
+    def read_file(self,domain,result):
+        with process.read_file(domain) as file:
+            tmp,datasets = process.get_file_annotations(file)
+
+            result["annotation"].append(tmp)  
+            result["datasets"] = datasets
+        return result
 
     def get(self):
         tr = None
@@ -117,16 +124,8 @@ class ProcessDomainResource(Resource):
 
                 return  result,  200                
             else:
-                with process.read_file(domain) as file:
-                    tmp,datasets = process.get_file_annotations(file)
-
-                    result["annotation"].append(tmp)  
-                    result["datasets"] = datasets
-                    #for item in file.attrs.items():
-                    #    print(item)
-                #R = process.load_domain(domain,raw)
-                #return jsonpickle.encode(R, unpicklable=False),200
-                #tr.set_completed(domain)
+                self.read_file(domain,result)
+       
                 return  result,  200 
         except Exception as err:
             (type, value, traceback) = sys.exc_info()
@@ -229,7 +228,17 @@ class StudyRegistrationResource(ProcessDomainResource):
         super(StudyRegistrationResource).__init__()
         self.paths = ["investigation","provider","instrument","wavelength"]
         self.create_folders = True
+        self.METADATA_FILE = "metadata.h5"
         
+    def read_file(self,domain,result):
+        if domain.endswith(self.METADATA_FILE):
+            sr = process.StudyRegistration();
+            with process.read_file(domain) as file:
+                metadata = sr.h52metadata(file)
+                result["metadata"] = metadata
+            return result
+        else:
+            super().read_file(domain,result)
 
     def get(self):
         return super().get();
@@ -253,7 +262,7 @@ class StudyRegistrationResource(ProcessDomainResource):
             params[ParamsRaman.WAVELENGTH.value] = metadata["instrument"][ParamsRaman.WAVELENGTH.value]
             
             domain,folder = self.check_paths(params,self.paths,skip_paths=[])
-            _out = "{}metadata.h5".format(domain)
+            _out = "{}{}".format(domain,self.METADATA_FILE)
             print(metadata)
             with h5pyd.File(_out  ,"w") as f:
                 sr.metadata2h5(metadata,f)

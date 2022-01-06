@@ -241,7 +241,8 @@ class StudyRegistration:
             "provider" : provider,
             self._tag_instrument : instrument
         }
-    def create_instrument(self,brand = "",model="",wavelength=-1,collection_optics = [],gratings=[],slit_size=[],pin_hole_size=[]):
+    def create_instrument(self,brand = "",model="",wavelength=-1,collection_optics = [],gratings=[],slit_size=[],
+                    pin_hole_size=[],collection_fibre_diameter=[],param_other=[]):
         return {
             
  			ParamsRaman.BRAND.value: brand,
@@ -251,7 +252,8 @@ class StudyRegistration:
  			ParamsRaman.GRATINGS.value: gratings,
  			ParamsRaman.SLIT_SIZE.value: slit_size,
  			ParamsRaman.PIN_HOLE_SIZE.value: pin_hole_size,
- 			"collection fibre diameter": []
+ 			ParamsRaman.COLLECTION_FIBRE_DIAMETER.value: collection_fibre_diameter,
+             ParamsRaman.OTHER.value: param_other
         }
 
 
@@ -284,6 +286,16 @@ class StudyRegistration:
         except Exception as err:
             print(err)
 
+    def h52metadata(self,h5file): 
+        metadata = {}
+        metadata["investigation"] = h5file.attrs["investigation"]
+        metadata["provider"] = h5file.attrs["provider"]
+        group_instrument = h5file[self._tag_instrument]
+        instrument = self.h52instrument(group_instrument)
+        metadata[self._tag_instrument] = instrument
+                
+        return metadata
+
     def h52instrument(self,group_instrument):
         optical_paths = []
     
@@ -311,14 +323,5 @@ class StudyRegistration:
             optical_paths.append(optical_path) 
         return instrument                         
 
-    def h52metadata(self,infile,h5module=h5py): 
 
-        metadata = { self._tag_instrument : []}
-        with h5module.File(infile,"r") as f:
-            _g_instruments = f[self._tag_instrument]
-            for key in _g_instruments.keys():
-                instrument = self.h52instrument(_g_instruments[key])
-                metadata[self._tag_instrument].append(instrument)
-                
-        return metadata
                   
