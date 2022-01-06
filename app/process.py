@@ -220,6 +220,9 @@ class StudyRegistration:
         self._tag_instrument = "instrument"
         self._tag_optical_paths = "optical_paths"
         self._tag_id = "id"
+        self.keys  = [ParamsRaman.COLLECTION_OPTICS.value,ParamsRaman.GRATINGS.value,ParamsRaman.SLIT_SIZE.value,
+            ParamsRaman.PIN_HOLE_SIZE.value,ParamsRaman.COLLECTION_FIBRE_DIAMETER.value,ParamsRaman.OTHER.value
+            ]
 
         pass
     def get_instrument_id(self,instrument):
@@ -256,24 +259,29 @@ class StudyRegistration:
              ParamsRaman.OTHER.value: param_other
         }
 
+    def opticalcomponents2h5(self,instrument,h5_group):
+        for key in self.keys:
+            try:
+                h5_group.attrs[key] = instrument[key]
+            except:
+                #delete if existing
+                h5_group.attrs[key] = []
+    
+    
 
     def instrument2h5(self,instrument,h5_group):
         h5_group.attrs[self._tag_id] = self.get_instrument_id(instrument)
         h5_group.attrs[ParamsRaman.BRAND.value] = instrument[ParamsRaman.BRAND.value]
         h5_group.attrs[ParamsRaman.MODEL.value] = instrument[ParamsRaman.MODEL.value]
         h5_group.attrs[ParamsRaman.WAVELENGTH.value] = instrument[ParamsRaman.WAVELENGTH.value]
-        h5_group.attrs[ParamsRaman.COLLECTION_OPTICS.value] = instrument[ParamsRaman.COLLECTION_OPTICS.value]
-        h5_group.attrs[ParamsRaman.GRATINGS.value] = instrument[ParamsRaman.GRATINGS.value]
-        h5_group.attrs[ParamsRaman.SLIT_SIZE.value] = instrument[ParamsRaman.SLIT_SIZE.value]
-        h5_group.attrs[ParamsRaman.PIN_HOLE_SIZE.value] = instrument[ParamsRaman.PIN_HOLE_SIZE.value]   
+        self.opticalcomponents2h5(instrument,h5_group)  
                 #print(instrument["optical_paths"]) 
         _g_ops = h5_group.create_group(self._tag_optical_paths)
         for op in instrument[self._tag_optical_paths]:
             _g_op = _g_ops.create_group(op[self._tag_id])
-            _g_op.attrs[ParamsRaman.COLLECTION_OPTICS.value] = op[ParamsRaman.COLLECTION_OPTICS.value]
-            _g_op.attrs[ParamsRaman.GRATINGS.value] = op[ParamsRaman.GRATINGS.value]
-            _g_op.attrs[ParamsRaman.SLIT_SIZE.value] = op[ParamsRaman.SLIT_SIZE.value]
-            _g_op.attrs[ParamsRaman.PIN_HOLE_SIZE.value] = op[ParamsRaman.PIN_HOLE_SIZE.value] 
+            for key in self.keys:
+                _g_op.attrs[key] = op[key]
+
 
 
     def metadata2h5(self,metadata,h5file): 
@@ -307,7 +315,9 @@ class StudyRegistration:
             ParamsRaman.COLLECTION_OPTICS.value : group_instrument.attrs[ParamsRaman.COLLECTION_OPTICS.value].tolist(), #converts to python types
             ParamsRaman.SLIT_SIZE.value :  group_instrument.attrs[ParamsRaman.SLIT_SIZE.value].tolist(),
             ParamsRaman.GRATINGS.value : group_instrument.attrs[ParamsRaman.GRATINGS.value].tolist(),
+            ParamsRaman.COLLECTION_FIBRE_DIAMETER.value : group_instrument.attrs[ParamsRaman.COLLECTION_FIBRE_DIAMETER.value].tolist(),
             ParamsRaman.PIN_HOLE_SIZE.value :  group_instrument.attrs[ParamsRaman.PIN_HOLE_SIZE.value].tolist(),
+            ParamsRaman.OTHER.value : group_instrument.attrs[ParamsRaman.OTHER.value].tolist(),
             self._tag_optical_paths : optical_paths
         }
                 

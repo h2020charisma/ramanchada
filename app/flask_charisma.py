@@ -243,6 +243,40 @@ class StudyRegistrationResource(ProcessDomainResource):
     def get(self):
         return super().get();
 
+    def put(self):
+        tr = TaskResult("PUT /metadata")
+        
+        params = {}
+        print(request.json);
+        sr = process.StudyRegistration();
+        try:
+            domain = request.json["domain"]  
+            metadata = request.json["metadata"]
+            mode = request.json["mode"] # optical_components | optical_path
+            
+            if domain.endswith(self.METADATA_FILE):
+                _out=domain
+            else:
+                _out = "{}{}".format(domain,self.METADATA_FILE)
+
+            if mode=="optical_components":
+                with h5pyd.File(_out  ,"r+") as f: 
+                    sr.opticalcomponents2h5(metadata["instrument"],f["instrument"])
+            elif mode=="optical_path": 
+                with h5pyd.File(_out  ,"r+") as f:
+                    instrument = f["instrument"]
+                    #tbd
+
+            tr.set_completed(domain)
+            return tr.to_dict(), 200 
+        except HTTPException as err:
+            print(err)
+            tr.set_error(str(err))
+            return tr.to_dict(), err.code                 
+        except Exception as err:
+            tr.set_error(str(err))
+            return tr.to_dict(), BadRequest.code    
+
     def post(self):
         tr = TaskResult("POST /metadata")
         
