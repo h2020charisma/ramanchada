@@ -261,7 +261,11 @@ class StudyRegistrationResource(ProcessDomainResource):
 
             if mode=="optical_components":
                 with h5pyd.File(_out  ,"r+") as f: 
-                    sr.opticalcomponents2h5(metadata["instrument"],f["instrument"])
+                    if len(f["instrument"]["optical_paths"].keys())==0:
+                        sr.opticalcomponents2h5(metadata["instrument"],f["instrument"])
+                    else:
+                       tr.set_error("Can't modify components; remove all optical paths first.") 
+                       return tr.to_dict(), BadRequest.code  
             elif mode=="optical_path": 
                 with h5pyd.File(_out  ,"r+") as f:
                     instrument = f["instrument"]
