@@ -266,6 +266,14 @@ class StudyRegistration:
             except:
                 #delete if existing
                 h5_group.attrs[key] = []
+
+    def opticalpaths2h5(self,instrument,h5_group):
+        _g_ops = h5_group.require_group(self._tag_optical_paths)
+        for op in instrument[self._tag_optical_paths]:
+            _g_op = _g_ops.require_group(op[self._tag_id])
+            _g_op.attrs["id"] = key
+            for key in self.keys:
+                _g_op.attrs[key] = op[key]
     
     
 
@@ -276,11 +284,7 @@ class StudyRegistration:
         h5_group.attrs[ParamsRaman.WAVELENGTH.value] = instrument[ParamsRaman.WAVELENGTH.value]
         self.opticalcomponents2h5(instrument,h5_group)  
                 #print(instrument["optical_paths"]) 
-        _g_ops = h5_group.create_group(self._tag_optical_paths)
-        for op in instrument[self._tag_optical_paths]:
-            _g_op = _g_ops.create_group(op[self._tag_id])
-            for key in self.keys:
-                _g_op.attrs[key] = op[key]
+        self.opticalpaths2h5(instrument,h5_group);
 
 
 
@@ -299,8 +303,12 @@ class StudyRegistration:
         metadata["investigation"] = h5file.attrs["investigation"]
         metadata["provider"] = h5file.attrs["provider"]
         group_instrument = h5file[self._tag_instrument]
-        instrument = self.h52instrument(group_instrument)
-        metadata[self._tag_instrument] = instrument
+        try:
+            instrument = self.h52instrument(group_instrument)
+            metadata[self._tag_instrument] = instrument
+        except Exception as err:
+            print(err)
+        
                 
         return metadata
 
@@ -311,26 +319,21 @@ class StudyRegistration:
             self._tag_id : group_instrument.attrs[self._tag_id],
             ParamsRaman.BRAND.value : group_instrument.attrs[ParamsRaman.BRAND.value],
             ParamsRaman.MODEL.value : group_instrument.attrs[ParamsRaman.MODEL.value],
-            ParamsRaman.WAVELENGTH.value : int(group_instrument.attrs[ParamsRaman.WAVELENGTH.value]),
-            ParamsRaman.COLLECTION_OPTICS.value : group_instrument.attrs[ParamsRaman.COLLECTION_OPTICS.value].tolist(), #converts to python types
-            ParamsRaman.SLIT_SIZE.value :  group_instrument.attrs[ParamsRaman.SLIT_SIZE.value].tolist(),
-            ParamsRaman.GRATINGS.value : group_instrument.attrs[ParamsRaman.GRATINGS.value].tolist(),
-            ParamsRaman.COLLECTION_FIBRE_DIAMETER.value : group_instrument.attrs[ParamsRaman.COLLECTION_FIBRE_DIAMETER.value].tolist(),
-            ParamsRaman.PIN_HOLE_SIZE.value :  group_instrument.attrs[ParamsRaman.PIN_HOLE_SIZE.value].tolist(),
-            ParamsRaman.OTHER.value : group_instrument.attrs[ParamsRaman.OTHER.value].tolist(),
             self._tag_optical_paths : optical_paths
         }
-                
-        _g_ops= group_instrument[self._tag_optical_paths]
-        for op in _g_ops.keys():
-            _g_op=_g_ops[op]
-            optical_path = {}
-            optical_path["id"] = op
-            optical_path[ParamsRaman.COLLECTION_OPTICS.value] = _g_ops[op].attrs[ParamsRaman.COLLECTION_OPTICS.value]
-            optical_path[ParamsRaman.SLIT_SIZE.value] = int(_g_ops[op].attrs[ParamsRaman.SLIT_SIZE.value])
-            optical_path[ParamsRaman.GRATINGS.value] = int(_g_ops[op].attrs[ParamsRaman.GRATINGS.value])
-            optical_path[ParamsRaman.PIN_HOLE_SIZE.value] = int(_g_ops[op].attrs[ParamsRaman.PIN_HOLE_SIZE.value] )
-            optical_paths.append(optical_path) 
+        for key in self.keys:
+            instrument[key] =  group_instrument.attrs[key].tolist() ;
+        try:
+            _g_ops= group_instrument[self._tag_optical_paths]
+            for op in _g_ops.keys():
+                _g_op=_g_ops[op]
+                optical_path = {}
+                optical_path["id"] = op
+                for key in self.keys:
+                    optical_path[key] = _g_ops[op].attrs[key]
+                optical_paths.append(optical_path) 
+        except Exception as err:
+            print(err)
         return instrument                         
 
 

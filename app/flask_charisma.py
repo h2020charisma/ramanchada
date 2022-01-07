@@ -247,12 +247,12 @@ class StudyRegistrationResource(ProcessDomainResource):
         tr = TaskResult("PUT /metadata")
         
         params = {}
-        print(request.json);
+        
         sr = process.StudyRegistration();
         try:
             domain = request.json["domain"]  
             metadata = request.json["metadata"]
-            mode = request.json["mode"] # optical_components | optical_path
+            mode = request.json["mode"] # optical_components | optical_paths
             
             if domain.endswith(self.METADATA_FILE):
                 _out=domain
@@ -266,10 +266,12 @@ class StudyRegistrationResource(ProcessDomainResource):
                     else:
                        tr.set_error("Can't modify components; remove all optical paths first.") 
                        return tr.to_dict(), BadRequest.code  
-            elif mode=="optical_path": 
+            elif mode=="optical_paths": 
                 with h5pyd.File(_out  ,"r+") as f:
-                    instrument = f["instrument"]
-                    #tbd
+                    try:
+                        sr.opticalpaths2h5(metadata["instrument"],f["instrument"])
+                    except Exception as err:
+                        print(err)
 
             tr.set_completed(domain)
             return tr.to_dict(), 200 
