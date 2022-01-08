@@ -10,7 +10,8 @@ import os,sys
 import json
 from werkzeug.exceptions import BadRequest, BadGateway, NotFound, HTTPException
 
-from process import ParamsRaman, TaskResult, TaskStatus
+from process import TaskResult, TaskStatus
+from study import ParamsRaman, StudyRegistration
 
 class Pipeline(Resource):
     #tbd load from config
@@ -232,7 +233,7 @@ class StudyRegistrationResource(ProcessDomainResource):
         
     def read_file(self,domain,result):
         if domain.endswith(self.METADATA_FILE):
-            sr = process.StudyRegistration();
+            sr = StudyRegistration();
             with process.read_file(domain) as file:
                 metadata = sr.h52metadata(file)
                 result["metadata"] = metadata
@@ -248,12 +249,12 @@ class StudyRegistrationResource(ProcessDomainResource):
         
         params = {}
         
-        sr = process.StudyRegistration();
+        sr = StudyRegistration();
         try:
             domain = request.json["domain"]  
             metadata = request.json["metadata"]
             mode = request.json["mode"] # optical_components | optical_paths
-            
+            print(request.json)
             if domain.endswith(self.METADATA_FILE):
                 _out=domain
             else:
@@ -288,7 +289,7 @@ class StudyRegistrationResource(ProcessDomainResource):
         
         params = {}
         #print(request.json);
-        sr = process.StudyRegistration();
+        sr = StudyRegistration();
         try:
             params["provider"] = request.json["provider"]  
             params["investigation"] = request.json["investigation"]     
