@@ -196,6 +196,11 @@ class StudyRegistration:
                     except:
                         tmp[ParamsRaman.POWER_MW.value] = None
                     optical_path[ParamsRaman.LASER_POWER.value].append(tmp)
+                try:
+                    optical_path[ParamsRaman.LASER_POWER.value].sort(key=lambda x: x["settings"], reverse=True)
+                except Exception as err:
+                    print(err)
+
 
         except Exception as err:
             print(err)
