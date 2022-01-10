@@ -161,7 +161,7 @@ class ProcessDomainResource(Resource):
 # {"name": "POST /domain", "result": "/Round_Robin_1/FNMT-Madrid/BWTek/532/Probe/PST10_iR532_Probe_005_3000msx7.cha", "error": null, "errorCause": null, "completed": "Mon Dec  6 16:14:21 2021", "started": "Mon Dec  6 16:14:21 2021", "status": "TaskStatus.Completed"}
     def post(self):
         tr = TaskResult("POST /dataset")
-        skip_paths=["sample","laser_power"]
+        skip_paths=["optical_path","sample","laser_power"]
         params = {}
         domain = None
         folder  = None
