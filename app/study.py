@@ -1,5 +1,8 @@
+import h5pyd
 
 from enum import Enum
+
+from werkzeug.exceptions import BadRequest
 class ParamsRaman(Enum):
     BRAND = "brand"
     MODEL = "model"
@@ -25,6 +28,15 @@ class StudyRegistration:
             ]
 
         pass
+           
+
+    def update_opticalpaths(self,metadata,_out):
+        with h5pyd.File(_out  ,"r+") as f:
+            try:
+                self.opticalpaths2h5(metadata["instrument"],f["instrument"])
+            except Exception as err:
+                raise err    
+
     def get_instrument_id(self,instrument):
         if self._tag_id in instrument:
             id = instrument[self._tag_id]
@@ -60,12 +72,16 @@ class StudyRegistration:
         }
 
     def opticalcomponents2h5(self,instrument,h5_group):
-        for key in self.keys:
-            try:
-                h5_group.attrs[key] = instrument[key]
-            except:
-                #delete if existing
-                h5_group.attrs[key] = []
+        if len(h5_group["optical_paths"].keys())>0:
+            for key in self.keys:
+                try:
+                    h5_group.attrs[key] = instrument[key]
+                except:
+                    #delete if existing
+                    h5_group.attrs[key] = []
+            return True
+        else:
+            return False
 
     def opticalpaths2h5(self,instrument,h5_group):
         print(">>",instrument)
@@ -146,25 +162,28 @@ class StudyRegistration:
                 instrument[key] = None
         try:
             _g_ops= group_instrument[self._tag_optical_paths]
+            
             for op in _g_ops.keys():
+                print(op);
+                
                 _g_op=_g_ops[op]
                 optical_path = {}
                 optical_path["id"] = op
                 optical_paths.append(optical_path) 
                 for key in self.keys:
-                    if isinstance(_g_op.attrs[key],str):
-                        optical_path[key] = _g_op.attrs[key]
-                    else:
-                        optical_path[key] = _g_op.attrs[key].tolist()
+                    try:
+                        if isinstance(_g_op.attrs[key],str):
+                            optical_path[key] = _g_op.attrs[key]
+                        else:
+                            optical_path[key] = _g_op.attrs[key].tolist()
+                    except Exception as err:
+                        print(err)                        
                 optical_path[ParamsRaman.LASER_POWER.value] = [] 
                 for laser_power_measurement in _g_op.keys():
                     tmp = {}
                     tmp[ParamsRaman.SETTINGS.value] = _g_op[laser_power_measurement].attrs[ParamsRaman.SETTINGS.value].tolist()
                     tmp[ParamsRaman.POWER_MW.value] = _g_op[laser_power_measurement].attrs[ParamsRaman.POWER_MW.value].tolist()
                     optical_path[ParamsRaman.LASER_POWER.value].append(tmp)
-
-                
-                
 
         except Exception as err:
             print(err)

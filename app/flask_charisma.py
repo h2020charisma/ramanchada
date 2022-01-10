@@ -244,6 +244,7 @@ class StudyRegistrationResource(ProcessDomainResource):
     def get(self):
         return super().get();
 
+   
     def put(self):
         tr = TaskResult("PUT /metadata")
         
@@ -253,7 +254,7 @@ class StudyRegistrationResource(ProcessDomainResource):
         try:
             domain = request.json["domain"]  
             metadata = request.json["metadata"]
-            mode = request.json["mode"] # optical_components | optical_paths
+            mode = request.json["mode"] # all | optical_components | optical_paths
             print(request.json)
             if domain.endswith(self.METADATA_FILE):
                 _out=domain
@@ -261,6 +262,7 @@ class StudyRegistrationResource(ProcessDomainResource):
                 _out = "{}{}".format(domain,self.METADATA_FILE)
 
             if mode=="optical_components":
+                
                 with h5pyd.File(_out  ,"r+") as f: 
                     if len(f["instrument"]["optical_paths"].keys())==0:
                         sr.opticalcomponents2h5(metadata["instrument"],f["instrument"])
@@ -272,7 +274,14 @@ class StudyRegistrationResource(ProcessDomainResource):
                     try:
                         sr.opticalpaths2h5(metadata["instrument"],f["instrument"])
                     except Exception as err:
-                        print(err)
+                        raise err    
+            elif mode=="all":
+                with h5pyd.File(_out  ,"r+") as f:
+                    try:
+                        sr.opticalcomponents2h5(metadata["instrument"],f["instrument"])
+                        sr.opticalpaths2h5(metadata["instrument"],f["instrument"])
+                    except Exception as err:
+                        raise err                    
 
             tr.set_completed(domain)
             return tr.to_dict(), 200 
