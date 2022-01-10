@@ -100,10 +100,15 @@ class StudyRegistration:
 
             for key in _g_op.keys():
                 del _g_op[key]
+            row = 0
             for laser_power_measurement in op[ParamsRaman.LASER_POWER.value]:
+                row = row+1
                 try:
-                    _g_laserpower = _g_op.require_group("{}_{}".format(ParamsRaman.LASER_POWER.value,laser_power_measurement[ParamsRaman.SETTINGS.value]))
-                    _g_laserpower.attrs[ParamsRaman.SETTINGS.value] = laser_power_measurement[ParamsRaman.SETTINGS.value]
+                    _g_laserpower = _g_op.require_group("{}_{}".format(ParamsRaman.LASER_POWER.value,row))
+                    try:
+                        _g_laserpower.attrs[ParamsRaman.SETTINGS.value] = laser_power_measurement[ParamsRaman.SETTINGS.value]
+                    except:
+                        _g_laserpower.attrs[ParamsRaman.SETTINGS.value] = ""
                     try:
                         if ParamsRaman.POWER_MW.value in laser_power_measurement:
                             _g_laserpower.attrs[ParamsRaman.POWER_MW.value] = laser_power_measurement[ParamsRaman.POWER_MW.value]
