@@ -276,12 +276,19 @@ class StudyRegistrationResource(ProcessDomainResource):
                     except Exception as err:
                         raise err    
             elif mode=="all":
+                
                 with h5pyd.File(_out  ,"r+") as f:
+                    print(metadata);
                     try:
                         sr.opticalcomponents2h5(metadata["instrument"],f["instrument"])
+                    except Exception as err:
+                        #print(traceback.format_exc())
+                        raise err     
+                    try:
                         sr.opticalpaths2h5(metadata["instrument"],f["instrument"])
                     except Exception as err:
-                        raise err                    
+                        #print(traceback.format_exc())
+                        raise err                                          
 
             tr.set_completed(domain)
             return tr.to_dict(), 200 
@@ -293,8 +300,7 @@ class StudyRegistrationResource(ProcessDomainResource):
             tr.set_error(str(err))
             return tr.to_dict(), BadRequest.code    
 
-    def post(self):
-        tr = TaskResult("POST /metadata")
+    def create_metadata(self,tr):
         
         params = {}
         #print(request.json);
@@ -314,7 +320,7 @@ class StudyRegistrationResource(ProcessDomainResource):
             domain,folder = self.check_paths(params,self.paths,skip_paths=[])
             _out = "{}{}".format(domain,self.METADATA_FILE)
             print(metadata)
-            with h5pyd.File(_out  ,"w") as f:
+            with h5pyd.File(_out  ,"a") as f:
                 sr.metadata2h5(metadata,f)
 
             tr.set_completed(domain)
@@ -327,6 +333,10 @@ class StudyRegistrationResource(ProcessDomainResource):
             tr.set_error(str(err))
             return tr.to_dict(), BadRequest.code    
 
+        
+    def post(self):
+        tr = TaskResult("POST /metadata")
+        tr = self.create_metadata(tr);
         
         
             

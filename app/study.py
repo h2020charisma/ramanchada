@@ -2,7 +2,7 @@ import h5pyd
 
 from enum import Enum
 
-from werkzeug.exceptions import BadRequest
+import traceback
 class ParamsRaman(Enum):
     BRAND = "brand"
     MODEL = "model"
@@ -72,16 +72,13 @@ class StudyRegistration:
         }
 
     def opticalcomponents2h5(self,instrument,h5_group):
-        if len(h5_group["optical_paths"].keys())>0:
-            for key in self.keys:
-                try:
-                    h5_group.attrs[key] = instrument[key]
-                except:
-                    #delete if existing
-                    h5_group.attrs[key] = []
-            return True
-        else:
-            return False
+        for key in self.keys:
+            try:
+                h5_group.attrs[key] = instrument[key]
+            except:
+               #delete if existing
+                h5_group.attrs[key] = []
+           
 
     def opticalpaths2h5(self,instrument,h5_group):
         print(">>",instrument)
@@ -100,13 +97,20 @@ class StudyRegistration:
                     _g_op.attrs[key] = op[key]                
             except Exception as err:
                 print(op,err)
-            try:
-                for laser_power_measurement in op[ParamsRaman.LASER_POWER.value]:
-                    _g_laserpower = _g_op.require_group("{}_{}".format(ParamsRaman.LASER_POWER.value,laser_power_measurement["settings"]))
+
+            for key in _g_op.keys():
+                del _g_op[key]
+            for laser_power_measurement in op[ParamsRaman.LASER_POWER.value]:
+                try:
+                    _g_laserpower = _g_op.require_group("{}_{}".format(ParamsRaman.LASER_POWER.value,laser_power_measurement[ParamsRaman.SETTINGS.value]))
                     _g_laserpower.attrs[ParamsRaman.SETTINGS.value] = laser_power_measurement[ParamsRaman.SETTINGS.value]
-                    _g_laserpower.attrs[ParamsRaman.POWER_MW.value] = laser_power_measurement[ParamsRaman.POWER_MW.value]
-            except Exception as err:
-                print(err)
+                    try:
+                        if ParamsRaman.POWER_MW.value in laser_power_measurement:
+                            _g_laserpower.attrs[ParamsRaman.POWER_MW.value] = laser_power_measurement[ParamsRaman.POWER_MW.value]
+                    except:
+                        _g_laserpower.attrs[ParamsRaman.POWER_MW.value] = ""
+                except Exception as err:
+                    print(traceback.format_exc())
 
     
     
@@ -126,7 +130,7 @@ class StudyRegistration:
         h5file.attrs["investigation"] = metadata["investigation"]
         h5file.attrs["provider"] = metadata["provider"]
         try:
-            _g_instrument = h5file.create_group(self._tag_instrument)
+            _g_instrument = h5file.require_group(self._tag_instrument)
             instrument = metadata[self._tag_instrument]
             self.instrument2h5(instrument,_g_instrument)
         except Exception as err:
@@ -182,7 +186,10 @@ class StudyRegistration:
                 for laser_power_measurement in _g_op.keys():
                     tmp = {}
                     tmp[ParamsRaman.SETTINGS.value] = _g_op[laser_power_measurement].attrs[ParamsRaman.SETTINGS.value].tolist()
-                    tmp[ParamsRaman.POWER_MW.value] = _g_op[laser_power_measurement].attrs[ParamsRaman.POWER_MW.value].tolist()
+                    try:
+                        tmp[ParamsRaman.POWER_MW.value] = _g_op[laser_power_measurement].attrs[ParamsRaman.POWER_MW.value].tolist()
+                    except:
+                        tmp[ParamsRaman.POWER_MW.value] = None
                     optical_path[ParamsRaman.LASER_POWER.value].append(tmp)
 
         except Exception as err:
