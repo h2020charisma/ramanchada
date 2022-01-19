@@ -68,6 +68,7 @@ def change_y(func):
 def change_x(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        self.x_label += " - modified"
+        if not self.x_label.endswith('modified'):
+            self.x_label += " - modified"
         return func(self, *args, **kwargs)
     return wrapper

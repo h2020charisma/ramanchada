@@ -7,20 +7,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.interpolate import interp1d
-from scipy.signal import find_peaks, savgol_filter, peak_widths
+from scipy.signal import find_peaks, savgol_filter, peak_widths, find_peaks_cwt
 from scipy.optimize import curve_fit
 from scipy.special import voigt_profile
+
 from ramanchada.utilities import lims
 
 
-def find_spectrum_peaks(x, y, prominence=.05, sg=11, x_min=25, x_max=10000, sort_by='prominence'):
+def find_spectrum_peaks(x, y, prominence=.05, sg=11, sort_by='prominence'):
     """
     find_spectrum_peaks(x, y, prominence=.05, sg=11, x_min=25, x_max=10000, sort_by='prominence')
     Finds peaks and their FWHM and return in spectral units
     """
     # Crop to specified range
-    l = lims(x, x_min, x_max)
-    x, y = l(x), l(y)
+    #l = lims(x, x_min, x_max)
+    #x, y = l(x), l(y)
     # Filter + minmax normalization are important!
     s = savgol_filter(y, sg, 2)
     s -= s.min()
@@ -44,6 +45,19 @@ def find_spectrum_peaks(x, y, prominence=.05, sg=11, x_min=25, x_max=10000, sort
     P['prominence'] = props_dict['prominences']
     P['FWHM'] = widths_in_x_units
     P['Gauss area'] = P['intensity']*P['FWHM']/2.3548*(2*np.pi)**.5
+    return P.sort_values(by=[sort_by], ascending=False, ignore_index=True)
+
+def find_spectrum_peaks_cwt(x, y, width=10, sort_by='intensity'):
+    """
+    find_spectrum_peaks_cwt(x, y, width=10, sort_by='prominence')
+    Finds peak positions using wavelet transformation.
+    """
+    #y -= y.min()
+    #y /= y.max()
+    integer_positions = find_peaks_cwt(y, width, wavelet=None, max_distances=None, gap_thresh=None, min_length=None, min_snr=1, noise_perc=10, window_size=None)
+    P = pd.DataFrame()
+    P['position'] = x[integer_positions]
+    P['intensity'] = y[integer_positions]
     return P.sort_values(by=[sort_by], ascending=False, ignore_index=True)
 
 def spectrum_peak_widths(x, y, pos_in_x_units, rel_height=0.5):
