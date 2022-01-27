@@ -30,7 +30,7 @@ def test_load_data_file_into_object():
     chada_obj.remove_baseline()
 
     chada_obj.normalize("area")
-    chada_obj.peaks(fitmethod='vg')
+    chada_obj.peaks(fitmethod='gl')
     print(chada_obj.bands)
 
     # Clean up.

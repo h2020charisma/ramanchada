@@ -12,6 +12,7 @@ dependencies:
   - pip
   - python<3.10
   - scipy
+  - seaborn
   - spectrochempy
   - pip:
     - renishawWiRE==0.1.15
