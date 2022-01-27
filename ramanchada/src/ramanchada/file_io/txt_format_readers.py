@@ -9,6 +9,7 @@ import os
 import time
 import re
 import zipfile
+import pandas as pd
 
 
 def read_JCAMP(file, verbose=True):
@@ -132,9 +133,14 @@ def dataFromTxtLines(data_lines):
         # for j, item in enumerate(items):
         #     if all([ii==" " for ii in item]):
         #         items[j] = item.replace(" ", "0")
-        items = [float(item) for item in items if item != ""]
+        #items = [float(item) for item in items if item != ""]
         data.append(items)
-    return np.array(data)
+    D = pd.DataFrame(np.array(data))
+    D = D.replace(r'^\s*$', 0, regex=True)
+    D = D.apply(pd.to_numeric)
+    D = D.dropna()
+    return D.to_numpy()
+    #return np.array(data)
     
 def isDataLine(line):
     line = line.strip("\n").replace("\t", " ")

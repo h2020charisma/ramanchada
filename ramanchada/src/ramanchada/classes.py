@@ -10,14 +10,15 @@ from scipy.interpolate import interp1d
 from copy import deepcopy
 import os
 import time
-from IPython.display import display
+import matplotlib.style as plot_style
+import seaborn as sns
 # ramanchada imports
 from ramanchada.decorators import specstyle, log, change_y, change_x, mark_peaks
 from ramanchada.pre_processing.baseline import baseline_model, xrays
 from ramanchada.pre_processing.denoise import smooth_curve
 from ramanchada.file_io.io import import_native,\
     read_chada, create_chada_from_native, commit_chada
-from ramanchada.analysis.peaks import find_spectrum_peaks, fit_spectrum_peaks_pos
+from ramanchada.analysis.peaks import find_spectrum_peaks, fit_spectrum_peaks_pos, find_spectrum_peaks_cwt
 from ramanchada.analysis.signal import snr
 from ramanchada.utilities import hqi, lims, interpolation_within_bounds, labels_from_filenames
 from ramanchada.calibration.calibration import raman_x_calibration, raman_x_calibration_from_spectrum, raman_y_calibration_from_spectrum,\
@@ -104,32 +105,71 @@ class Curve:
         self.y -= methods[method][0](l(self.y))
         self.y /= methods[method][1](l(self.y))
     @log
-    def smooth(self, method='sg', window_length=7, polyorder=2):
+    def smooth(self, method='sg', *args, **kwargs):
         """
         Smoothing / denoising of x data.
 
         Parameters
         ----------
         method : str, optional
-            > Smoothing method.  
-            - 'sg': Savitzky-Golay filter - see scipy.signal.savgol_filter  
-            - 'wiener': Wien filter - see scipy.signal.wiener  
-            - 'median': median filter - see scipy.signal.medfilt  
-            - 'gauss': Gauss filter - see scipy.ndimage.gaussian_filter1d  
-            The default is 'sg'.
-            
-        window_length : int, optional
-            > Window Length for Savitzky-Golay filter. The default is 7.
-            
-        polyorder : int, optional
-            > Polynomial order for Savitzky-Golay filter. The default is 2.
+            > Smoothing method. Can be one of the following:
 
+        **- 'sg': Savitzky-Golay filter** - see scipy.signal.savgol_filter
+        
+        **kwargs
+
+        window_length : int, optional
+        > Window Length for Savitzky-Golay filter. The default is 11.
+        
+        polyorder : int, optional
+        > Polynomial order for Savitzky-Golay filter. The default is 3.
+
+        **- 'wiener': Wien filter** - see scipy.signal.wiener
+        
+        **kwargs
+
+        mysize : int or array_like, optional
+        > A scalar or an N-length list giving the size of the Wiener filter window in each dimension. Elements of mysize should be odd. If mysize is a scalar, then this scalar is used as the size in each dimension.
+
+        noise : float, optional
+        > The noise-power to use. If None, then noise is estimated as the average of the local variance of the input.
+
+        **- 'median': median filter** - see scipy.signal.medfilt
+        
+        **kwargs
+
+        kernel_size : array_like, optional
+        > A scalar or an N-length list giving the size of the median filter window in each dimension. Elements of kernel_size should be odd. If kernel_size is a scalar, then this scalar is used as the size in each dimension. Default size is 3 for each dimension.
+
+        **- 'gauss': Gauss filter** - see scipy.ndimage.gaussian_filter1d
+
+        sigma : scalar
+        > Standard deviation for Gaussian kernel
+
+        **- 'lowess': Locally Weighted Scatterplot Smoothing (LOWESS)** - see statsmodels.nonparametric.smoothers_lowess.lowess
+        
+        **kwargs
+
+        span : float
+        > Width of interval (in channels) to use for estimating each y-value.
+
+        **- 'boxcar': filter by rectangular window or Dirichlet window**
+        
+        **kwargs
+
+        box_pts : int
+        > Number of points in the output window. If zero or less, an empty array is returned.
+
+        The default is 'sg'.
+            
         Returns
         -------
         None.
 
         """
-        self.y = smooth_curve(self.y, method=method, window_length=window_length, polyorder=polyorder)
+        if len(args) == 0 and len(kwargs) == 0:
+            kwargs = {'window_length': 11, 'polyorder': 3}
+        self.y = smooth_curve(self.y, method, *args, **kwargs)
     @log
     def x_crop(self, x_min, x_max):
         """
@@ -156,7 +196,7 @@ class Spectrum(Curve):
     A curve with peaks that can be located and analyzed.
     Inherits from Curve.
     """
-    def __init__(self, data, x_column_name, y_column_name,
+    def __init__(self, data, x_column_name, y_column_name, label=None,
                  x_label='spectral index', y_label='intensity [a.u.]'):
         """
 
@@ -184,6 +224,7 @@ class Spectrum(Curve):
         """
         super().__init__(data, x_column_name, y_column_name)
         self.x_label, self.y_label = x_label, y_label
+        
     @change_y
     @log
     def invert(self):
@@ -197,7 +238,8 @@ class Spectrum(Curve):
         """
         self.y *= -1.
         self.y -= self.y.min()
-    def peaks(self, prominence=0.05, x_min=-1e9, x_max=1e9, fit=True, fitmethod = 'voigt', interval_width=2, 
+
+    def peaks(self, prominence=0.05, x_min=-1e9, x_max=1e9, cwt=False, fit=True, fitmethod = 'voigt', interval_width=2, cwt_width=20,
               sort_by='prominence', show=False):
         """
         Automated detection and analysis of peaks.
@@ -236,8 +278,10 @@ class Spectrum(Curve):
         """
         l = lims(self.x, x_min, x_max)
         x, y = l(self.x), l(self.y)
-        self.bands = find_spectrum_peaks(x, y, prominence=prominence, x_min=x_min, x_max=x_max,
-                                         sort_by=sort_by)
+        if cwt:
+            self.bands = find_spectrum_peaks_cwt(x, y, width=cwt_width, sort_by='intensity')
+        else:
+            self.bands = find_spectrum_peaks(x, y, prominence=prominence, sort_by=sort_by)
         if fit:
             positions, widths, areas = fit_spectrum_peaks_pos(x, y,
                 self.bands['position'], method = fitmethod, interval_width=interval_width, show=show)
@@ -248,7 +292,7 @@ class Spectrum(Curve):
     @mark_peaks
     def show_bands(self):
         if not hasattr(self, 'bands'):
-            print(f'No bands located yet. Use **bands()** first.')
+            print(f'No bands located yet. Use *.peaks()* first.')
             return
         else:
             plt.plot(self.x, self.y)
@@ -287,19 +331,41 @@ class Spectrum(Curve):
         """
         self.baseline = baseline_model(self.y, method=method, lam=lam, p=p, niter=niter, smooth=smooth)
     @log
-    def remove_baseline(self):
+    def remove_baseline(self, method='als', lam=1e5, p=0.001, niter=100, smooth=7):
         """
-        Subtracts baseline model stored in .baseline from y data (if it exists).
+        Fits and removes a flourescent background model.
+
+        Parameters
+        ----------
+        method : str, optional
+            > Model fitting method as described in  
+            *Ryabchykov, O., Guo, S., & Bocklitz, T. (2019). Analyzing Raman spectroscopic data. Physical Sciences Reviews, 4(2), 1–16. https://doi.org/10.1515/psr-2017-0043.*  
+            - 'als': Asymmetric least squares.  
+            After *He, S., Zhang, W., Liu, L., Huang, Y., He, J., Xie, W., … P. W.-A., & 2014,  undefined. (n.d.). Baseline correction for Raman spectra using an improved asymmetric least squares method. Pubs.Rsc.Org.*  
+            - 'snip': statistics-sensitive non-linear iterative peak clipping.  
+            After *Caccia, M., Ebolese, A., Maspero, M., Santoro, R., Tecnologia, A., Locatelli, M., Pieracci, M., Tintori, C., & Caen, S. A. (n.d.). Background removal procedure based on the SNIP algorithm for γ − ray spectroscopy with the CAEN Educational Kit. CAEN Tools for Discovery Educational Note ED3163, 1–4.*    
+            The default is 'als'.
+            
+        lam : double, optional
+            > lambda parameter for ALS. The default is 1e5.
+            
+        p : double, optional
+            > p parameter for ALS. The default is 0.001.
+            
+        niter : int, optional
+            > Number of iterations. The default is 100.
+            
+        smooth : int, optional
+            > Kernel length for Wien filtering prior to ALS baseline fitting. The default is 7.
 
         Returns
         -------
         None.
 
         """
-        if hasattr(self, 'baseline'):
-            self.y -= self.baseline
-        else:
-            pass
+        self.fit_baseline(method='als', lam=1e5, p=0.001, niter=100, smooth=7)
+        self.y -= self.baseline
+            
     @change_x
     @log
     def interpolate_x(self, reference_spectrum=[]):
@@ -344,37 +410,51 @@ class Spectrum(Curve):
         self_copy = deepcopy(self)
         self_copy.interpolate_x(reference_spectrum)
         return hqi(self_copy.y, reference_spectrum.y)
+    def math(self, spectrum, operator='+'):
+        ops = {'+': np.add,
+            '-': np.subtract,
+            '*': np.multiply,
+            '/': np.divide}
+        s = deepcopy(spectrum)
+        s.interpolate_x(self)
+        self.y = ops[operator](self.y, s.y)
+
 
 class RamanSpectrum(Spectrum):
     """
     Class for a Raman Spectrum, which can have metadata and can be calibrated.
-    Inherits from Spectrum.
+    Inherits from *Spectrum*.
     """
-    def __init__(self, source_path,
-             x_label='Raman shift [rel. 1/cm]', y_label='counts [1]'):
+    def __init__(self, data, x_column_name, y_column_name,
+                 x_label='Raman Shift [rel 1/cm]', y_label='intensity [a.u.]'):
         """
 
         Parameters
         ----------
-        source_path : str
-            > Path to spectrum data file that is to be read.
-            If extension is .cha, an existing CHADA file will be opened.
-            If not, a native data file is imported and a CHADA file with the same name generated in the same directory.
+        data : pandas DataFrame
+            > Data is imported as a DataFrame. This can come from common data formats such as csv or Excel.
+            
+        x_column_name : str
+            > Name of the column holding the x data.
+            
+        y_column_name : str
+            > Name of the column holding the y data.
             
         x_label : str, optional
-            > Label for x data. The default is 'Raman shift [rel. 1/cm]'.
+            > Label for x data. The default is 'spectral index'.
             
         y_label : TYPE, optional
-            > Label for y data The default is 'counts [1]'.
+            > Label for y data The default is 'intensity [a.u.]'.
 
         Returns
         -------
         None.
 
         """
-        self.x, self.y, self.meta = import_native(source_path)
+        super().__init__(data, x_column_name, y_column_name)
         self.x_label, self.y_label = x_label, y_label
         self.time = time.ctime()
+        self.meta = {}
     @log
     def add_metadata(self, meta_dict):
         """
@@ -390,7 +470,7 @@ class RamanSpectrum(Spectrum):
         None.
 
         """
-        self.meta = meta_dict
+        self.meta.update(meta_dict)
     @change_x
     @log
     def calibrate(self, calibration):
@@ -706,6 +786,18 @@ class RamanChada(RamanSpectrum):
         self.log = []
 
 def make_test_RamanChada():
+    """
+    Generates test spctrum
+    Parameters
+    ----------
+    None.
+
+    Returns
+    -------
+    RamanChada
+        > Spectrum of a organic compound with several peaks as RamanChada.
+
+    """
     dir = os.path.dirname(__file__)
     filename = os.path.join(dir, "testdata", "200218-17.wdf")
     return RamanChada(filename)
@@ -751,8 +843,10 @@ class SpectrumGroup:
         """
         self.spectra.append( deepcopy(spectrum) )
         self.x_label, self.y_label = spectrum.x_label, spectrum.y_label
-        self.data_labels.append(spectrum.meta['Original file'])
-        #self.data_labels.append(len(self.data_labels))
+        if hasattr(spectrum, 'meta'):
+            self.data_labels.append(spectrum.meta['Original file'])
+        else:
+            self.data_labels.append(len(self.data_labels))
     @specstyle
     def plot(self, leg=True):
         """
@@ -794,14 +888,14 @@ class SpectrumGroup:
         lo = max([s.x.min() for s in self.spectra])
         hi = min([s.x.max() for s in self.spectra])
         # Make common x
-        x = np.linspace(lo, hi, x_increment)
+        x = np.arange(lo, hi, x_increment)
         # for all
         y = []
         for s in self.spectra:
             # interpolate to x
             f_inter = interp1d(s.x, s.y, kind="quadratic")
             y.append(f_inter(x))
-        return np.array(y)
+        return x, np.array(y)
     def process(self, method, *args, **kwargs):
         """
         Applies a specified method to separately to each spectrum in the group.
@@ -860,6 +954,22 @@ class SpectrumGroup:
         mtf_data['amplitude'] = mtf
         return RamanMTF(mtf_data)
     def round_robin(self, ref_pos, fitmethod='voigt', interval_width=2):
+        """
+        Determines the x position of a list of specified peaks.
+
+        Parameters
+        ----------
+        fitmethod : str
+            > Name of peak fit model to be applied
+            
+        interval_width : int
+            > Interval in multiples of FWHM around the peak to be used for peak fitting.  
+
+        Returns
+        -------
+        DataFrame
+            > *DataFrame* containing standard and fitted peak positions.
+        """
         lines, labels = [], []
         for s in self.spectra:
             # Fit peaks for each spectrum
@@ -876,7 +986,219 @@ class SpectrumGroup:
         # Make list of filenames without path and ext.
         data_labels = [os.path.splitext(self.data_labels)[0] for s in self.spectra]
         return labels_from_filenames(data_labels, pivot_string=pivot_string, pos=pos, numeric=numeric, length=length)
+
+
+class RamanGroup():
+    """
+    Group of Raman spectra for comparison and multivariate analysis.
+    Contains the spectra in form of a DataFrame in the *.data* attribute
+    with spectra as rows and Raman shifts as columns. The column names are
+    Raman shifts as *float*, while the index is the file basename.
+    """
+    def __init__(self, spectra, interpolate=True):
+        """
+        Parameters
+        ----------
+        spectra : list of *RamanChada* or *RamanSpectrum* objects
+            > Spectra to be included upon initialization.
+            Example:
+            
+                G = RamanGroup( [s1, s2, s3] )
+            
+        interpolate : bool
+            > If True, Raman shifts are interpolated to increments of 1 1/cm.
+            If False, all x axes will be interpolated to the x axis of the first spectrum added.
+
+        Returns
+        -------
+        None.
+        """
+        first_spectrum = spectra[0]
+        if interpolate:
+            first_spectrum.interpolate_x()
+        self.x_label, self.y_label = first_spectrum.x_label, first_spectrum.y_label
+        S = spectrum_to_frame(first_spectrum)
+        self.data = pd.DataFrame(S)
+        if len(spectra) > 1:
+            self.add(spectra[1:])
+            
+    def add_one(self, spectrum, use_new_x=False):
+        """
+        Adds a single spectrum.
+        Parameters
+        ----------
+        spectrum : *RamanChada* or *RamanSpectrum* object
+            > Spectrum to be added.
+            Example:
+            
+                G.add_one(s4)
+            
+        use_new_x : bool
+            > If True, the existing x axes will be interpolated to the newly added spectrum.
+            If False, the x axis will be interpolated on the existing x axes. The default is False.
+
+        Returns
+        -------
+        None.
+        """
+        # Convert added spectrum to DataFrame with x values as rows
+        S = spectrum_to_frame(spectrum).T
+        # Merge existing self.data with S while using the 'outer' union with both sets of x values
+        merged = self.data.T.merge(S, left_index=True, right_index=True, how='outer')
+        # Interpolate missing values and reindex on original x axis. Fill NaNs with zeros.
+        if use_new_x:
+            new_index = S.index
+        else:
+            new_index = self.data.T.index
+        merged = merged.interpolate('quadratic').reindex(new_index).fillna(0)
+        self.data = merged.T
     
+    def add(self, spectra):
+        """
+        Adds a list of spectra.
+        Parameters
+        ----------
+        spectra : list of *RamanChada* or *RamanSpectrum* objects
+            > Spectra to be added.
+            Example:
+            
+                G.add( [s5, s6] )
+            
+        Returns
+        -------
+        None.
+        """
+        [ self.add_one(s) for s in spectra ]
+        
+    def set_targets(self, target_dict):
+        """
+        Adds targets for plottting prediction model training.
+        Parameters
+        ----------
+        target_dict : dict
+            > Targets to be added to the group as dict.
+            Keys are arbitrary target names, while values must be lists
+            or 1-dim arrays with a lenght matching the number of spectra in the *RamanGroup*,
+            i.e. `len(target_dict) = len(G.data)`.
+            Target values can be strings (for classification) or numbers (for regression).
+            The targets are stored in *RamanGroup.targets*, a *DataFrame*.
+            Note that multiple targets can be added.
+            
+        Returns
+        -------
+        None.
+        """
+        self.targets = pd.DataFrame(index=self.data.index, data=target_dict)
+        
+    def extract(self, no_of_spectrum):
+        """
+        Returns a specified single spectrum from the *RamanGroup*.
+        Parameters
+        ----------
+        no_of_spectrum : int
+            > Index of the spectrum to be extracted.
+            
+        Returns
+        -------
+        RamanChada
+            > Extracted spectrum
+        """
+        return line_to_spectrum(self.data, no_of_spectrum)
+
+    def clone(self):
+        """
+        Returns a deep copy of a *RamanGroup*.
+        Parameters
+        ----------
+        None.
+            
+        Returns
+        -------
+        RamanGroup
+            > Exact copy of *self*.
+        """
+        return deepcopy(self)
+    
+    def process(self, method, *args, **kwargs):
+        """
+        Applies a single pre-processing step to a *RamanGroup*.
+        Uses the function *ramanchada.models.process_DF*.
+        Parameters
+        ----------
+        method : str
+            > Name of *RamanChada* method to be applied.
+            For details, refer to *ramanchada.RamanChada*.
+            
+        *args : str of number
+            > Non-keyword parameters for method
+
+        **kwargs
+            > Keyword parameters for method   
+
+        Returns
+        -------
+        None.
+        """
+        self.data = process_DF(self.data, method, *args, **kwargs)
+        
+    @property
+    def x(self):
+        """
+        np.array
+            > Common x axis of *RamanGroup* as 1D array
+        """
+        return np.array(self.data.columns)
+    
+    @property
+    def y(self):
+        """
+        np.array
+            > Y values of *RamanGroup* as array with dimensions [n_spectra, n_channels]
+        """
+        return self.data.to_numpy()
+        
+    def __repr__(self):
+        info = f'{self.__class__.__name__} containing {len(self.data)} spectra.'
+        if hasattr(self, 'targets'):
+            info += '\n' + f'{len(self.targets)} added'
+        return info
+
+    def plot(self, target=None, xrange = [1e-9, 1e9], legend=False):
+        """
+        Plots spectra of a *RamanGroup* in a single axis. 
+        Parameters
+        ----------
+        target : str
+            > Name of target to be used for hue. If given, spectra with a
+            common target will be represented by their mean spectrum, with
+            a spread corresponding to the standard deviation at each Raman shift.
+            This is particularly useful if a large number of spectra are plotted.
+            The default is None.
+
+        xrange : list of double [x_min, x_max]
+            > x interval to be plotted. The default is [1e-9, 1e9] (all).
+
+        legend : bool
+            > If True, a legend will be shown. The default is False. 
+
+        Returns
+        -------
+        None.
+        """
+        plot_style.use('bmh')
+        plt.figure(figsize=[8,4])
+        if target:
+            #target = 'times'
+            arrays = [self.targets[target], self.targets.index]
+            DF = self.data.copy()
+            DF.index = pd.MultiIndex.from_arrays(arrays, names=(target, 'file'))
+            sns.lineplot(data=DF.T[xrange[0]:xrange[1]], ci='sd', n_boot=5, dashes=False)
+        else:
+            sns.lineplot(data=self.data.T[xrange[0]:xrange[1]], dashes=False, legend=legend)
+        plt.ylabel(self.y_label)
+        plt.show()
+
+
 class RamanCalibration(Curve):
     """
     Object containing a Raman x axis calibration.
@@ -931,6 +1253,7 @@ class RamanCalibration(Curve):
         plt.ylabel(self.y_label)
         plt.show()
 
+
 class RamanMTF(Curve):
     """
     Object containing an MTF model in Fourier space. The reciprocal coordinate is 1/pixels.
@@ -939,6 +1262,7 @@ class RamanMTF(Curve):
         super().__init__(data, 'Nyquist frequency', 'amplitude')
         # k + CTF come as 1024 px vectors.
 
+
 class RamanCTF(Curve):
     """
     Object containing an MTF model in Fourier space. The reciprocal coordinate is 1/x units.
@@ -946,7 +1270,8 @@ class RamanCTF(Curve):
     def __init__(self, data):
         super().__init__(data, 'spatial frequency', 'amplitude')
         # k + CTF come as 1024 px vectors.
-                
+
+
 class MetaData(dict):
     """
     Object containing meta data as a dict.
@@ -955,3 +1280,100 @@ class MetaData(dict):
     # Can be loaded or generated as dict, independently from data
 #    - from_file
 #    - clean
+
+
+def spectrum_to_frame(spectrum):
+    """
+    Converts a spectrum to a *DataFrame* with a single row.
+    Parameters
+    ----------
+    spectrum : Spectrum, RamanSpectrum or RamanChada
+        > Spectrum to be converted
+    
+    Returns
+    -------
+    DataFrame
+        > DataFrame with a single row.
+        For details, see *ramanchada.classes.RamanGroup*
+    """
+    if hasattr(spectrum, 'meta'):
+        column_name = spectrum.meta['Original file']
+    else:
+        column_name = 'intensity'
+    D = pd.DataFrame({column_name: spectrum.y})
+    D.index = spectrum.x
+    D.index.name = spectrum.x_label
+    D.attrs = {'y_label': spectrum.y_label}
+    return D.T
+
+def spectrum_to_series(spectrum):
+    """
+    Converts a spectrum to a pandas *Series*.
+    Parameters
+    ----------
+    spectrum : Spectrum, RamanSpectrum or RamanChada
+        > Spectrum to be converted
+    
+    Returns
+    -------
+    pandas.Series
+        > Series with Raman shifts as index.
+    """
+    S = pd.Series(data=spectrum.y, name=spectrum.meta['Original file'])
+    S.index = spectrum.x
+    S.index.name = spectrum.x_label
+    return S
+
+def line_to_spectrum(DF, no_line):
+    """
+    Converts the specified row of a *DataFrame* to a *Spectrum*.
+    Parameters
+    ----------
+    DF : DataFrame
+        > *pandas.DataFrame* structured as described in *ramanchada.classes.RamanGroup*
+    
+    no_line : int
+        > Row index to be converted 
+    
+    Returns
+    -------
+    ramanchada.classes.Spectrum
+    """
+    S = DF.iloc[no_line]
+    S.name = 'y'
+    S = S.to_frame()
+    S['x'] = S.index
+    return Spectrum(S, x_column_name='x', y_column_name='y')
+
+def process_DF(DF, method, *args, **kwargs):
+    """
+    Applies a single pre-processing step to each row of a *DataFrame*.
+    Parameters
+    ----------
+    method : str
+        > Name of *RamanChada* method to be applied.
+        For details, refer to *ramanchada.classes.RamanChada*.
+        
+    *args : str of number
+        > Non-keyword parameters for method
+
+    **kwargs
+        > Keyword parameters for method   
+
+    Returns
+    -------
+    *pandas.DataFrame*
+        > Processed *DataFrame*
+    """
+    S = []
+    for row in range(len(DF)):
+        s = line_to_spectrum(DF, row)
+        func = getattr(s, method)
+        func(*args, **kwargs)
+        S.append(s.y)
+    Y = np.array(S)
+    DF_proc = pd.DataFrame(Y, columns = s.x)
+    DF_proc.columns.name = DF.columns.name
+    DF_proc.index = DF.index
+    return DF_proc
+

@@ -60,14 +60,18 @@ def xrays(SPEC):
     # iterate through peaks
     for pos, fwhm in zip(P['position'], P['FWHM']):
         # Cut out peak
-        l = lims(S.x, pos-fwhm, pos+fwhm)
+        l = lims(S.x, pos-fwhm/2., pos+fwhm/2.)
         # calc n of values in peak greater than half amplitude. This value is usually 1-2 for xrays.
         n_peak_points = sum(l(S.y) > l(S.y).max()*.5)
         if n_peak_points <= 2:
             # get indices of peak
             _, _, pos_ind = np.intersect1d(l(S.x), S.x, return_indices=True)
+            # estimate spike base as line between peak bases
+            #left_ind, right_ind = np.max(0, pos_ind.min()-1), np.min(S.y.max(), pos_ind.max()+1)
+            #left_base, right_base = S.y[left_ind], S.y[right_ind]
+            line = np.interp(l(S.x), [l(S.x)[0], l(S.x)[-1]], [l(S.y)[0], l(S.y)[-1]])
             # add xray to model
-            xray_model[pos_ind] = S.y[pos_ind]
+            xray_model[pos_ind] = S.y[pos_ind] - line
     return xray_model
 
 
