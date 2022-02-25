@@ -46,7 +46,7 @@ def read_JCAMP(file, verbose=True):
         new_x.append(float(items[0]) + x_increment*ii)
         y.append(float(item))
     return np.array(new_x), np.array(y), meta
-    
+
 def readTXT(file, x_col=0, y_col=0, verbose=True):
     msg= ""
     # open .txt and read as lines
@@ -141,7 +141,7 @@ def dataFromTxtLines(data_lines):
     D = D.dropna()
     return D.to_numpy()
     #return np.array(data)
-    
+
 def isDataLine(line):
     line = line.strip("\n").replace("\t", " ")
     # is not blank
@@ -149,7 +149,7 @@ def isDataLine(line):
     blank = all([c == " " for c in line])
     # has more than 75% digits
     digits = np.sum( [d.isdigit() for d in line] ) / len(line) > .25
-    # apart from digits, has only ".", ";", ",", " "           
+    # apart from digits, has only ".", ";", ",", " "
     chars = all([c in '.,;+-eE ' for c in line if not c.isdigit()])
     return (not blank) & digits & chars
 
@@ -165,7 +165,7 @@ def startStop(lines):
     if stop_line <= start_line:
         stop_line = len(lines)-1
     return start_line, stop_line
-    
+
 def getYDataType(y_data):
     types = {0: "Single spectrum", 1: "Line scan", 2: "Map", 3: "Map series / volume"}
     return types[len(y_data.shape)-1]
