@@ -50,8 +50,8 @@ def read_JCAMP(file, verbose=True):
 def readTXT(file, x_col=0, y_col=0, verbose=True):
     msg= ""
     # open .txt and read as lines
-    d = open(file)
-    lines = d.readlines()
+    with open(file) as d:
+        lines = d.readlines()
     # Find data lines and convert to np.array
     start, stop = startStop(lines)
     msg += "Importing " + str(stop-start+1) + " data lines starting from line " + str(start) + " in " + os.path.basename(file) + ".\n"
