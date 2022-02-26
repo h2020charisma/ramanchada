@@ -212,13 +212,12 @@ class ProcessDomainResource(Resource):
             tr.set_completed(destination_domain)
             return tr.to_dict()  ,200
         except HTTPException as err:
-            tr.set_error(str(err))
+            tr.set_error(repr(err))
             return tr.to_dict(), err.code           
         except Exception as err:
-            print(err);
-            (type, value, traceback) = sys.exc_info()
-            tr.set_error(str(value),str(type))
-            print(tr.to_dict());
+
+            tr.set_error(repr(err))
+            #print(tr.to_dict());
             return tr.to_dict(), 400 
 
 from flask.json import JSONEncoder

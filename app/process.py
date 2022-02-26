@@ -177,7 +177,7 @@ def load_native(file,f_name,destination_domain,params={}):
             load_h5file(f_in,destination_domain)
     except Exception as err:
         print(err)
-        raise          
+        raise err      
     finally:
         if native_filename!=None:
             os.remove(native_filename)
