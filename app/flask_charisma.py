@@ -300,14 +300,14 @@ class StudyRegistrationResource(ProcessDomainResource):
             return tr.to_dict(), BadRequest.code    
 
     def create_metadata(self,tr):
-        
         params = {}
-        #print(request.json);
+        
         sr = StudyRegistration();
         try:
             params["provider"] = request.json["provider"]  
+            
             params["investigation"] = request.json["investigation"]     
-            _tag_instrument = request.json["instrument"]            
+            _tag_instrument = request.json["instrument"]      
             metadata = sr.create_metadata(
                 params["investigation"],params["provider"],
                 brand = _tag_instrument[ParamsRaman.BRAND.value],
@@ -335,10 +335,8 @@ class StudyRegistrationResource(ProcessDomainResource):
         
     def post(self):
         tr = TaskResult("POST /metadata")
-        tr = self.create_metadata(tr);
-        
-        
-            
+        r = self.create_metadata(tr);
+        return r
 
 
 app = Flask(__name__)
