@@ -17,12 +17,12 @@ from ramanchada.decorators import specstyle, log, change_y, change_x, mark_peaks
 from ramanchada.pre_processing.baseline import baseline_model, xrays
 from ramanchada.pre_processing.denoise import smooth_curve
 from ramanchada.file_io.io import import_native,\
-    read_chada, create_chada_from_native, commit_chada
+    read_chada, create_chada_from_native, commit_chada, write_new_chada
 from ramanchada.analysis.peaks import find_spectrum_peaks, fit_spectrum_peaks_pos, find_spectrum_peaks_cwt
 from ramanchada.analysis.signal import snr
 from ramanchada.utilities import hqi, lims, interpolation_within_bounds, labels_from_filenames
 from ramanchada.calibration.calibration import raman_x_calibration, raman_x_calibration_from_spectrum, raman_y_calibration_from_spectrum,\
-    deconvolve_mtf, relative_ctf, apply_relative_ctf, raman_mtf_from_psfs, extract_xrays
+    deconvolve_mtf, relative_ctf, apply_relative_ctf, raman_mtf_from_psfs, extract_xrays, construct_calibration
 
     
 class Curve:
@@ -330,6 +330,10 @@ class Spectrum(Curve):
 
         """
         self.baseline = baseline_model(self.y, method=method, lam=lam, p=p, niter=niter, smooth=smooth)
+    @specstyle
+    def plot_baseline(self):
+        plt.plot(self.x, self.baseline, 'r-')
+        plt.plot(self.x, self.y, 'k:')
     @log
     def remove_baseline(self, method='als', lam=1e5, p=0.001, niter=100, smooth=7):
         """
@@ -494,7 +498,7 @@ class RamanSpectrum(Spectrum):
         # Make sure x values remain sorted
         inds = self.x.argsort()
         self.x, self.y = self.x[inds], self.y[inds]
-    def make_x_calibration(self, reference, fitmethod = 'voigt', peak_pos=[]):
+    def make_x_calibration(self, reference, fitmethod = 'voigt', peak_pos=[], poly_degree=3, interpolate=False):
         """
         Generate an x axis calibration, either to a RamanSpectrum or a list of exact reference peak positions.
 
@@ -525,11 +529,12 @@ class RamanSpectrum(Spectrum):
         # Returns a RamanCalibration
         # If a Raman spectrum is given as refernece
         if reference.__class__.__name__ in ['RamanSpectrum', 'RamanChada']:
-            return raman_x_calibration_from_spectrum(self, reference, fitmethod=fitmethod, peak_pos=peak_pos)
+            return raman_x_calibration_from_spectrum(self, reference, fitmethod=fitmethod, peak_pos=peak_pos,
+                poly_degree=poly_degree, interpolate=interpolate)
         # If a list of peak positions is given
         if reference.__class__.__name__ == 'list':
             print('list')
-            return raman_x_calibration(self, reference, fitmethod=fitmethod)
+            return raman_x_calibration(self, reference, fitmethod=fitmethod, poly_degree=poly_degree, interpolate=interpolate)
         else:
             return None
     @change_y
@@ -662,6 +667,10 @@ class RamanSpectrum(Spectrum):
 
         """
         self.xrays = xrays(self)
+    @specstyle
+    def plot_xrays(self):
+        plt.plot(self.x, self.xrays, 'r-')
+        plt.plot(self.x, self.y, 'k:')
     @change_y
     @log
     def remove_xrays(self):
@@ -1203,10 +1212,8 @@ class RamanCalibration(Curve):
     """
     Object containing a Raman x axis calibration.
     """
-    test_x = np.linspace(0, 3500, 100)
     def __init__(self, data, poly_degree=3, interpolate=False):
         """
-
         Parameters
         ----------
         data : DataFrame
@@ -1237,6 +1244,8 @@ class RamanCalibration(Curve):
                 # Only apply shift within x limits of calibration data
                 # Set shifts outside the limits to boundary values
                 self.interp_x = interpolation_within_bounds(self.x, self.y, poly_degree)
+            self.poly_degree = poly_degree
+            self.interpolate = interpolate
     def show(self):
         """
         Plots the calibration data points and the associated model.
@@ -1247,11 +1256,15 @@ class RamanCalibration(Curve):
 
         """
         plt.figure()
-        plt.plot(self.test_x, self.interp_x(self.test_x))
+        test_x = np.linspace(0, self.x.max(), 100)
+        plt.plot(test_x, self.interp_x(test_x))
         plt.plot(self.x, self.y, 'ko')
         plt.xlabel(self.x_label)
         plt.ylabel(self.y_label)
         plt.show()
+    def save(self, file_path):
+        calibration_metadata = {'Calibration time': self.time, 'Polynomial order': self.interp_x.order}
+        write_new_chada(file_path, self.x, self.y, calibration_metadata)
 
 
 class RamanMTF(Curve):
