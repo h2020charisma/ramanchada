@@ -1,0 +1,8 @@
+tasks:
+  - source: tasks.metadata.get
+    product: 
+      data: products/metadata.json
+#      nb: products/metadata.get.ipynb
+    params:
+      folder_input: "{{folder_input}}"    
+      file_metadata: "{{file_metadata}}"    
