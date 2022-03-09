@@ -46,6 +46,14 @@ class StudyRegistration:
 
     def create_metadata(self,investigation,provider,
         brand = "",model="",wavelength=-1,collection_optics = [],gratings=[],slit_size=[],pin_hole_size=[]):
+        try:
+            brand = brand.strip().upper().replace(" ","_")
+        except:
+            pass
+        try:
+            model = model.strip().upper().replace(" ","_")
+        except:
+            pass        
         instrument = self.create_instrument(brand,model,wavelength,collection_optics,gratings,slit_size,
             pin_hole_size);
         
