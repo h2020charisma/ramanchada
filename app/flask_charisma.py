@@ -13,6 +13,10 @@ from werkzeug.exceptions import BadRequest, BadGateway, NotFound, HTTPException
 from process import TaskResult, TaskStatus
 from study import ParamsRaman, StudyRegistration
 
+# multiple files
+# flask.request.files.getlist("file")
+from flask import request
+
 class Pipeline(Resource):
     #tbd load from config
 
@@ -186,9 +190,14 @@ class ProcessDomainResource(Resource):
       
          
         try:
-            uploaded_file = request.files['file']
-            f_name = uploaded_file.filename
-            if f_name==None or f_name=="":
+            uploaded_files = request.files.getlist("file[]")
+            nofiles = True
+            for uf in uploaded_files:
+                f_name = uf.filename
+                if f_name!=None and f_name!="":
+                    nofiles=False
+
+            if nofiles:
                 tr.set_error("Missing file")
                 #print(tr.to_dict());
                 return tr.to_dict(), BadRequest.code 
@@ -199,17 +208,22 @@ class ProcessDomainResource(Resource):
 
 
         try:
-            filename, file_extension = os.path.splitext(f_name)
-
-            if file_extension==".cha":
-                destination_domain="{}/{}".format(folder,f_name)
-                process.load_h5stream(uploaded_file.stream,destination_domain,params)
-            else:
-                destination_domain="{}/{}.cha".format(folder,filename)
-                process.load_native(file=uploaded_file,f_name=f_name,destination_domain=destination_domain,
-                    params=params)
+            result = ""
+            for uf in uploaded_files:
+                f_name = uf.filename
+                filename, file_extension = os.path.splitext(f_name)
+                if file_extension==".cha":
+                    destination_domain="{}/{}".format(folder,f_name)
+                    process.load_h5stream(uf.stream,destination_domain,params)
+                else:
+                    f_name = uf.filename
+                    destination_domain="{}/{}.cha".format(folder,filename)
+                    print(destination_domain)
+                    process.load_native(file=uf,f_name=f_name,destination_domain=destination_domain,
+                        params=params)
+                result = result + destination_domain + " "
             
-            tr.set_completed(destination_domain)
+            tr.set_completed(result)
             return tr.to_dict()  ,200
         except HTTPException as err:
             tr.set_error(repr(err))
