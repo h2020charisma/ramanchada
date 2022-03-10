@@ -51,7 +51,7 @@ class StudyRegistration:
         except:
             pass
         try:
-            model = model.strip().upper().replace(" ","_")
+            model = model.strip().replace(" ","_")
         except:
             pass        
         instrument = self.create_instrument(brand,model,wavelength,collection_optics,gratings,slit_size,
