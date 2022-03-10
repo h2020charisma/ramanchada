@@ -6,3 +6,19 @@ tasks:
     params:
       folder_input: "{{folder_input}}"    
       file_metadata: "{{file_metadata}}"    
+
+  - source: tasks.api.files2hsds
+    product: 
+      data: products/files2hsds.json
+  #    nb: products/metadata.get.ipynb
+    params:
+      folder_input: "{{folder_input}}"    
+      json_metadata: "products/metadata.json"
+      ramandb_api: "{{ramandb_api}}"
+      hs_username: "{{hs_username}}"
+      hs_password: "{{hs_password}}"
+      hsds_investigation: "{{hsds_investigation}}"
+      hsds_provider: "{{hsds_provider}}"
+      hsds_instrument: "{{hsds_instrument}}"
+      hsds_wavelength: "{{hsds_wavelength}}"
+      

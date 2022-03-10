@@ -36,9 +36,9 @@ def get(folder_input,file_metadata,product):
     
     metadata={ "provider" : front_sheet.iloc[0][1], 
                "instrument" : front_sheet.iloc[0][6], "wavelength" : front_sheet.iloc[1][6],
-               "optical_paths" : [] }
+               "optical_path" : [] }
     
-    ops = metadata["optical_paths"]
+    ops = metadata["optical_path"]
 
     row = 6
     #while not pd.isna(front_sheet.iloc[row][0]):
