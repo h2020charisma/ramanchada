@@ -8,12 +8,13 @@ from scipy.optimize import dual_annealing
 from copy import deepcopy
 from scipy.interpolate import interp1d
 from scipy.ndimage import gaussian_filter1d
+from ramanchada.file_io.io import read_chada
 
 from ramanchada.analysis.peaks import fit_spectrum_peaks_pos
 from ramanchada.utilities import lims
 
 
-def raman_x_calibration(target_spectrum, reference_peak_list, fitmethod, interpolate=False):
+def raman_x_calibration(target_spectrum, reference_peak_list, fitmethod, poly_degree=3, interpolate=False):
     # spectrum is a RamanSpectrum
     # reference is a list of precise reference x peak positions
     # pos must be in x range an non-nan
@@ -26,9 +27,9 @@ def raman_x_calibration(target_spectrum, reference_peak_list, fitmethod, interpo
     target_pos = [target_pos[ii] for ii, cond in enumerate(ind) if not cond]
     reference_peak_list = [reference_peak_list[ii] for ii, cond in enumerate(ind) if not cond]
     # construct calibration
-    return construct_calibration(target_pos, np.array(reference_peak_list) - np.array(target_pos), interpolate=interpolate)
+    return construct_calibration(target_pos, np.array(reference_peak_list) - np.array(target_pos), poly_degree=poly_degree, interpolate=interpolate)
 
-def raman_x_calibration_from_spectrum(target_spectrum, reference_spectrum, fitmethod, peak_pos=[]):
+def raman_x_calibration_from_spectrum(target_spectrum, reference_spectrum, fitmethod, peak_pos=[], poly_degree=3, interpolate=False):
     # Find peaks in target
     # if np peak list is given, locate peaks
     if peak_pos == []:
@@ -40,7 +41,7 @@ def raman_x_calibration_from_spectrum(target_spectrum, reference_spectrum, fitme
     # Fit corresponding peaks in reference
     reference_pos = fit_spectrum_peaks_pos(reference_spectrum.x,
                                             reference_spectrum.y, peak_pos, fitmethod)[0].tolist()
-    return raman_x_calibration(target_spectrum, reference_pos, fitmethod)
+    return raman_x_calibration(target_spectrum, reference_pos, fitmethod, poly_degree=poly_degree, interpolate=interpolate)
 
 def raman_y_calibration_from_spectrum(target_spectrum, reference_spectrum, x_min=-1e9, x_max=1e9):
     ref, tar = deepcopy(reference_spectrum), deepcopy(target_spectrum)
@@ -58,12 +59,18 @@ def raman_y_calibration_from_spectrum(target_spectrum, reference_spectrum, x_min
     g, x = gain[ok], tar.x[ok]
     return construct_calibration(x, g, x_col_name='Raman shift', y_col_name='y gain', interpolate=False)
 
-def construct_calibration(pos, shifts, x_col_name='Raman shift', y_col_name='RS correction'):
+def construct_calibration(pos, shifts, poly_degree=3, x_col_name='Raman shift', y_col_name='RS correction', interpolate=False):
     from ramanchada.classes import RamanCalibration
     caldata = pd.DataFrame()
     caldata[x_col_name] = pos
     caldata[y_col_name] = shifts
-    return RamanCalibration(caldata, interpolate=interpolate)
+    return RamanCalibration(caldata, poly_degree=poly_degree, interpolate=interpolate)
+
+def read_x_calibration(file_path):
+    pos, shifts, calibration_metadata, _, _ = read_chada(file_path)
+    calibration = construct_calibration(pos, shifts, poly_degree=calibration_metadata['Polynomial order'])
+    calibration.time = calibration_metadata['Calibration time']
+    return calibration
 
 # def raman_x_calibration_from_spectrum(target_spectrum, reference_spectrum, fitmethod, peak_pos=[]):
 #     # Find peaks in target
