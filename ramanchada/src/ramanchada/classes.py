@@ -3,6 +3,7 @@
 # All rights reserved. The code may be used for purposes of CHARISMA as defined in the Consortium Agreement.
 
 # external imports
+from weakref import ref
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -190,6 +191,12 @@ class Curve:
         """
         l = lims(self.x, x_min, x_max)
         self.x, self.y = l(self.x), l(self.y)
+    def to_csv(self, filepath):
+        DF = pd.DataFrame( {self.x_label: self.x, self.y_label: self.y} )
+        DF.to_csv(filepath)
+    def to_excel(self, filepath):
+        DF = pd.DataFrame( {self.x_label: self.x, self.y_label: self.y} )
+        DF.to_excel(filepath)
     
 class Spectrum(Curve):
     """
@@ -388,7 +395,7 @@ class Spectrum(Curve):
         """
         # If no reference is given, just sample to one wavenumber
         if reference_spectrum == []:
-            x = np.arange(self.x.min(), self.x.max()+1, 1)
+            x = np.arange(np.floor( self.x.min() ), np.ceil( self.x.max() )+1, 1)
         else:
             x = reference_spectrum.x.copy()
         # reference_spectrum is a Spectrum
@@ -475,6 +482,26 @@ class RamanSpectrum(Spectrum):
 
         """
         self.meta.update(meta_dict)
+    def reset_x(self):
+        self.x = np.arange( len(self.y) )
+        self.x_label = 'Spectrum channel no.'
+    def make_x_axis(self, x_peak_positions_dict, x_unit='Raman shift [rel. 1/cm]', show=False):
+        # Note: peaks must be discovered first with .peaks() method, so that .bands attribute exists.
+        # merge x_peak_positions_dict with 'position' column of .bands by index
+        found_positions = self.bands['position']
+        selected_found_positions = np.array( [found_positions[peak_index] for peak_index in x_peak_positions_dict.keys()] )
+        reference_positions = np.array([v for v in x_peak_positions_dict.values()])
+        # generate & return RamanCalibration with polynomial degree=1 (linear interpolation)
+        axis_data = pd.DataFrame( {'original x: ' + self.x_label: selected_found_positions, x_unit: reference_positions} )
+        x_axis = RamanCalibration(data=axis_data, poly_degree=1, interpolate=True)
+        if show:
+            x_axis.show()
+        return x_axis
+    @change_x
+    @log
+    def assign_x(self, x_axis):
+        self.x = x_axis.interp_x(self.x)
+        self.x_label = x_axis.y_label
     @change_x
     @log
     def calibrate(self, calibration):
