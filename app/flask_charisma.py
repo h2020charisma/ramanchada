@@ -236,51 +236,12 @@ class StudyRegistrationResource(ProcessDomainResource):
         return super().get();
 
    
+    
     def put(self):
         tr = TaskResult("PUT /metadata")
-        
-        params = {}
-        
         sr = StudyRegistration();
         try:
-            domain = request.json["domain"]  
-            metadata = request.json["metadata"]
-            mode = request.json["mode"] # all | optical_components | optical_paths
-            print(request.json)
-            if domain.endswith(self.METADATA_FILE):
-                _out=domain
-            else:
-                _out = "{}{}".format(domain,self.METADATA_FILE)
-
-            if mode=="optical_components":
-                
-                with h5pyd.File(_out  ,"r+") as f: 
-                    if len(f["instrument"]["optical_paths"].keys())==0:
-                        sr.opticalcomponents2h5(metadata["instrument"],f["instrument"])
-                    else:
-                       tr.set_error("Can't modify components; remove all optical paths first.") 
-                       return tr.to_dict(), BadRequest.code  
-            elif mode=="optical_paths": 
-                with h5pyd.File(_out  ,"r+") as f:
-                    try:
-                        sr.opticalpaths2h5(metadata["instrument"],f["instrument"])
-                    except Exception as err:
-                        raise err    
-            elif mode=="all":
-                
-                with h5pyd.File(_out  ,"r+") as f:
-                    print(metadata);
-                    try:
-                        sr.opticalcomponents2h5(metadata["instrument"],f["instrument"])
-                    except Exception as err:
-                        #print(traceback.format_exc())
-                        raise err     
-                    try:
-                        sr.opticalpaths2h5(metadata["instrument"],f["instrument"])
-                    except Exception as err:
-                        #print(traceback.format_exc())
-                        raise err                                          
-
+            domain = sr.put_metadata(request.json["domain"],request.json["metadata"],request.json["mode"],self.METADATA_FILE)
             tr.set_completed(domain)
             return tr.to_dict(), 200 
         except HTTPException as err:

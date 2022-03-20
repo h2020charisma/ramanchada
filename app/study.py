@@ -32,7 +32,49 @@ class StudyRegistration:
             ]
 
         pass
-           
+
+       
+    def put_metadata(self,domain,metadata,mode,metadata_file):
+        params = {}
+        try:
+            
+            if domain.endswith(metadata_file):
+                _out=domain
+            else:
+                _out = "{}{}".format(domain,metadata_file)
+
+            if mode=="optical_components":
+                
+                with h5pyd.File(_out  ,"r+") as f: 
+                    if len(f["instrument"]["optical_paths"].keys())==0:
+                        self.opticalcomponents2h5(metadata["instrument"],f["instrument"])
+                    else:
+                       raise Exception("Can't modify components; remove all optical paths first.") 
+
+            elif mode=="optical_paths": 
+                with h5pyd.File(_out  ,"r+") as f:
+                    try:
+                        self.opticalpaths2h5(metadata["instrument"],f["instrument"])
+                    except Exception as err:
+                        raise err    
+            elif mode=="all":
+                
+                with h5pyd.File(_out  ,"r+") as f:
+                    try:
+                        self.opticalcomponents2h5(metadata["instrument"],f["instrument"])
+                    except Exception as err:
+                        #print(traceback.format_exc())
+                        raise err     
+                    try:
+                        self.opticalpaths2h5(metadata["instrument"],f["instrument"])
+                    except Exception as err:
+                        #print(traceback.format_exc())
+                        raise err                                          
+            return domain    
+        except Exception as err:
+            print(err)
+            raise err    
+   
     def post_metadata(self,investigation,provider,instrument,metadata_file,create_folders,paths):
         params = {}
         params["provider"] = provider 
