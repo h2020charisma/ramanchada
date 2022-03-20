@@ -203,3 +203,20 @@ def load_domain(url,raw=True):
     finally:
         if f!=None:
             f.close()
+
+import h5pyd._apps.hsdel as hsdel
+def delete_domain_recursive(fname):
+    try:
+           #print(fname)
+        f = h5pyd.Folder(fname+"/")
+        n = f._getSubdomains()
+        if n>0:
+            for s in f._subdomains:
+                    #print(s["name"])
+                delete_domain_recursive(s["name"])
+    except Exception as err:
+        raise err
+    try:  
+        hsdel.deleteDomain(fname)
+    except Exception as err:
+        raise err
