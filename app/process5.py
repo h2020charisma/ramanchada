@@ -13,8 +13,6 @@ import time
 import uuid
 import json
 
-import study as study
-
 
 
 class TaskStatus(Enum):
@@ -102,6 +100,7 @@ def check_folder(domain="/Round_Robin_1/",create=False):
             return h5pyd.Folder(domain, mode='x',  endpoint=cfg["hs_endpoint"], username=cfg["hs_username"], password=cfg["hs_password"], bucket="charisma", owner=cfg["hs_username"])
         else:
             raise err
+
 
 
 def load_h5stream(stream,destination_domain):

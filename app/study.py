@@ -3,6 +3,10 @@ import h5pyd
 from enum import Enum
 
 import traceback
+import process5 as process5
+from werkzeug.exceptions import BadRequest, BadGateway, NotFound, HTTPException
+
+
 class ParamsRaman(Enum):
     BRAND = "brand"
     MODEL = "model"
@@ -29,6 +33,27 @@ class StudyRegistration:
 
         pass
            
+    def post_metadata(self,investigation,provider,instrument,metadata_file,create_folders,paths):
+        params = {}
+        params["provider"] = provider 
+        params["investigation"] = investigation  
+        _tag_instrument = instrument    
+        metadata = self.create_metadata(
+                params["investigation"],params["provider"],
+                brand = _tag_instrument[ParamsRaman.BRAND.value],
+                model=_tag_instrument[ParamsRaman.MODEL.value],
+                wavelength=_tag_instrument[ParamsRaman.WAVELENGTH.value]);
+        print(metadata)
+        params[self._tag_instrument] = self.get_instrument_id(metadata[self._tag_instrument])
+        params[ParamsRaman.WAVELENGTH.value] = metadata[self._tag_instrument][ParamsRaman.WAVELENGTH.value]
+            
+        domain,folder = check_paths(params,paths,skip_paths=[],create_folders=create_folders)
+        _out = "{}{}".format(domain,metadata_file)
+            
+        with h5pyd.File(_out  ,"a") as f:
+            self.metadata2h5(metadata,f)
+        return domain
+
 
     def update_opticalpaths(self,metadata,_out):
         with h5pyd.File(_out  ,"r+") as f:
@@ -214,5 +239,27 @@ class StudyRegistration:
             print(err)
         return instrument                         
 
+def check_paths(params,paths,skip_paths,create_folders): 
+
+    folder = ""
+    h5folder=None
+    for p in paths:
+        if p in skip_paths:
+            continue;
+        folder = "{}/{}".format(folder,params[p])
+        domain="{}/".format(folder)
+        try:
+            h5folder = process5.check_folder(domain,create=create_folders)
+            h5folder.close()
+        except IOError as err:
+            if err.errno==NotFound.code:
+                raise NotFound(domain + " " + str(err))
+            else:
+                raise BadGateway(domain + " " + str(err),err.errno)
+        except Exception as err:
+            raise BadGateway(domain + " " + str(err))
+
+                    
+    return domain,folder;
 
                   

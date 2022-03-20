@@ -4,14 +4,14 @@ import pandas as pd
 import ast
 from io import BytesIO
 import uuid
-import process
+import process5 as process5
 import traceback
 import os,sys
 import json
 from werkzeug.exceptions import BadRequest, BadGateway, NotFound, HTTPException
 
-from process import TaskResult, TaskStatus
-from study import ParamsRaman, StudyRegistration
+from process5 import TaskResult, TaskStatus
+from study import ParamsRaman, StudyRegistration, check_paths
 
 # multiple files
 # flask.request.files.getlist("file")
@@ -66,7 +66,7 @@ class AlgorithmResource(Resource):
                 return tr.to_dict(), 400          
 
         try:
-            R = process.load_domain(params["dataset"],True)
+            R = process5.load_domain(params["dataset"],True)
             self.run(R,params["algorithm"])
 
             tr.set_completed(params["dataset"])
@@ -87,8 +87,8 @@ class ProcessDomainResource(Resource):
         pass
 
     def read_file(self,domain,result):
-        with process.read_file(domain) as file:
-            tmp,datasets = process.get_file_annotations(file)
+        with process5.read_file(domain) as file:
+            tmp,datasets = process5.get_file_annotations(file)
 
             result["annotation"].append(tmp)  
             result["datasets"] = datasets
@@ -111,15 +111,15 @@ class ProcessDomainResource(Resource):
                 tr.set_error("missing domain")
                 return tr.to_dict(),400
             if domain.endswith("/"):
-                with process.check_folder(domain,create=False) as folder:
+                with process5.check_folder(domain,create=False) as folder:
                     n = folder._getSubdomains()
 
                     for s in folder._subdomains:
                         subdomain = {"name" : s["name"], "annotation" : [], "last_segment" : s["name"].split("/")[-1]}
                         
                         try:
-                            with process.read_file(s["name"]) as file:
-                                tmp,datasets = process.get_file_annotations(file)
+                            with process5.read_file(s["name"]) as file:
+                                tmp,datasets = process5.get_file_annotations(file)
                                 subdomain["annotation"].append(tmp) 
                                 subdomain["datasets"] = datasets
                                 pass
@@ -137,29 +137,7 @@ class ProcessDomainResource(Resource):
             tr.set_error(str(value),str(type))
             return tr.to_dict(),400
 
-    def check_paths(self,params,paths,skip_paths): 
 
-        #print(params)
-        folder = ""
-        h5folder=None
-        for p in paths:
-            if p in skip_paths:
-                continue;
-            folder = "{}/{}".format(folder,params[p])
-            domain="{}/".format(folder)
-            try:
-                h5folder = process.check_folder(domain,create=self.create_folders)
-                h5folder.close()
-            except IOError as err:
-                if err.errno==NotFound.code:
-                    raise NotFound(domain + " " + str(err))
-                else:
-                    raise BadGateway(domain + " " + str(err),err.errno)
-            except Exception as err:
-                raise BadGateway(domain + " " + str(err))
-
-                    
-        return domain,folder;
     
 # curl http://127.0.0.1:5000/dataset -F "file=@PST10_iR532_Probe_005_3000msx7.spc" -F "provider=FNMT-Madrid" -F "investigation=Round_Robin_1" -F "instrument=BWTek" -F "wavelength=532" -F "optical_path=Probe" -F "sample=PST10" -u user
 # {"name": "POST /domain", "result": "/Round_Robin_1/FNMT-Madrid/BWTek/532/Probe/PST10_iR532_Probe_005_3000msx7.cha", "error": null, "errorCause": null, "completed": "Mon Dec  6 16:14:21 2021", "started": "Mon Dec  6 16:14:21 2021", "status": "TaskStatus.Completed"}
@@ -179,7 +157,7 @@ class ProcessDomainResource(Resource):
                 except:
                     raise BadRequest("Missing {}".format(p))
 
-            domain,folder = self.check_paths(params,self.paths,skip_paths)
+            domain,folder = check_paths(params,self.paths,skip_paths,self.create_folders)
         except HTTPException as err:
             tr.set_error(str(err))
             return tr.to_dict(), err.code   
@@ -214,12 +192,12 @@ class ProcessDomainResource(Resource):
                 filename, file_extension = os.path.splitext(f_name)
                 if file_extension==".cha":
                     destination_domain="{}/{}".format(folder,f_name)
-                    process.load_h5stream(uf.stream,destination_domain,params)
+                    process5.load_h5stream(uf.stream,destination_domain,params)
                 else:
                     f_name = uf.filename
                     destination_domain="{}/{}.cha".format(folder,filename)
                     print(destination_domain)
-                    process.load_native(file=uf,f_name=f_name,destination_domain=destination_domain,
+                    process5.load_native(file=uf,f_name=f_name,destination_domain=destination_domain,
                         params=params)
                 result = result + destination_domain + " "
             
@@ -247,7 +225,7 @@ class StudyRegistrationResource(ProcessDomainResource):
     def read_file(self,domain,result):
         if domain.endswith(self.METADATA_FILE):
             sr = StudyRegistration();
-            with process.read_file(domain) as file:
+            with process5.read_file(domain) as file:
                 metadata = sr.h52metadata(file)
                 result["metadata"] = metadata
             return result
@@ -313,29 +291,14 @@ class StudyRegistrationResource(ProcessDomainResource):
             tr.set_error(str(err))
             return tr.to_dict(), BadRequest.code    
 
-    def create_metadata(self,tr):
-        params = {}
-        
-        sr = StudyRegistration();
-        try:
-            params["provider"] = request.json["provider"]  
-            
-            params["investigation"] = request.json["investigation"]     
-            _tag_instrument = request.json["instrument"]      
-            metadata = sr.create_metadata(
-                params["investigation"],params["provider"],
-                brand = _tag_instrument[ParamsRaman.BRAND.value],
-                model=_tag_instrument[ParamsRaman.MODEL.value],
-                wavelength=_tag_instrument[ParamsRaman.WAVELENGTH.value]);
-            params["instrument"] = sr.get_instrument_id(metadata["instrument"])
-            params[ParamsRaman.WAVELENGTH.value] = metadata["instrument"][ParamsRaman.WAVELENGTH.value]
-            
-            domain,folder = self.check_paths(params,self.paths,skip_paths=[])
-            _out = "{}{}".format(domain,self.METADATA_FILE)
-            print(metadata)
-            with h5pyd.File(_out  ,"a") as f:
-                sr.metadata2h5(metadata,f)
 
+        
+    def post(self):
+        tr = TaskResult("POST /metadata")
+        try:
+            sr = StudyRegistration();
+            domain = sr.post_metadata(request.json["investigation"],request.json["provider"],request.json["instrument"]
+                    ,self.METADATA_FILE,self.create_folders,self.paths);
             tr.set_completed(domain)
             return tr.to_dict(), 200 
         except HTTPException as err:
@@ -344,13 +307,7 @@ class StudyRegistrationResource(ProcessDomainResource):
             return tr.to_dict(), err.code                 
         except Exception as err:
             tr.set_error(str(err))
-            return tr.to_dict(), BadRequest.code    
-
-        
-    def post(self):
-        tr = TaskResult("POST /metadata")
-        r = self.create_metadata(tr);
-        return r
+            return tr.to_dict(), BadRequest.code             
 
 
 app = Flask(__name__)
