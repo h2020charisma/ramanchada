@@ -2,8 +2,8 @@
 # cd app
 # python -m pytest  ..\tests\test_app.py::test_postmetadata
 
-from app.study import StudyRegistration, ParamsRaman
-from app.process5 import delete_domain_recursive
+from study import StudyRegistration, ParamsRaman
+from process5 import delete_domain_recursive
 
 def test_postmetadata():
     data = { "investigation" : "SANDBOX", "provider" : "IDEA",
@@ -20,12 +20,12 @@ def test_postmetadata():
         domain = sr.post_metadata(data[ "investigation"],data["provider"],data["instrument"],"metadata.h5",True,["investigation","provider","instrument","wavelength"]);
 
         assert domain == _domain
-                
+
     except Exception as err:
         assert False
 
 def test_putmetadata():
-    metadata = { 
+    metadata = {
                 "instrument" : { "optical_components" : {}}
                 }
     op1 = { "id" : "OP1"}
@@ -41,13 +41,13 @@ def test_putmetadata():
                 }
                 ]
     metadata["instrument"]["optical_paths"] = [ op1  ]
-                       
+
     _domain = "/SANDBOX/IDEA/TEST_MODEL/785/"
 
     try:
         sr = StudyRegistration();
         domain =  sr.put_metadata(_domain,metadata,"all","metadata.h5")
         assert domain == _domain
-                
+
     except Exception as err:
-        assert False            
+        assert False
