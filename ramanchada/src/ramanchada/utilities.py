@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 import re
 import pandas as pd
 
+def wavelengths_to_wavenumbers(wavelenght_vector, laser_wavelength):
+    return (1./laser_wavelength - 1./wavelenght_vector) * 1e7
+
 def hqi(y1, y2):
     # Hit quality index (equivalent to cross-correlation)
     # See Rodriguez, J.D., et al., Standardization of Raman spectra for transfer of spectral libraries across different

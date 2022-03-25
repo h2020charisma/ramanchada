@@ -21,7 +21,7 @@ from ramanchada.file_io.io import import_native,\
     read_chada, create_chada_from_native, commit_chada, write_new_chada
 from ramanchada.analysis.peaks import find_spectrum_peaks, fit_spectrum_peaks_pos, find_spectrum_peaks_cwt
 from ramanchada.analysis.signal import snr
-from ramanchada.utilities import hqi, lims, interpolation_within_bounds, labels_from_filenames
+from ramanchada.utilities import hqi, lims, interpolation_within_bounds, labels_from_filenames, wavelengths_to_wavenumbers
 from ramanchada.calibration.calibration import raman_x_calibration, raman_x_calibration_from_spectrum, raman_y_calibration_from_spectrum,\
     deconvolve_mtf, relative_ctf, apply_relative_ctf, raman_mtf_from_psfs, extract_xrays, construct_calibration
 
@@ -501,6 +501,7 @@ class RamanSpectrum(Spectrum):
     @log
     def assign_x(self, x_axis):
         self.x = x_axis.interp_x(self.x)
+        self.x += x_axis.x_offset_value
         self.x_label = x_axis.y_label
     @change_x
     @log
@@ -723,8 +724,16 @@ class RamanSpectrum(Spectrum):
             > Approximation for SNR.
         
         """
-
         return snr(self.y)
+    @change_x
+    @change_y
+    @log
+    def nm_to_wavenumber(self, laser_wavelength=532.):
+        # The default is a frequency-doubled Ne:YAG laser with 523 nm
+        self.x = wavelengths_to_wavenumbers(self.x, laser_wavelength)
+        # The data will have to be flipped in general
+        self.y = np.flip(self.y)
+        self.x_label = 'Raman shift [rel. 1/cm]'
         
 class RamanChada(RamanSpectrum):
     """
@@ -1273,6 +1282,7 @@ class RamanCalibration(Curve):
                 self.interp_x = interpolation_within_bounds(self.x, self.y, poly_degree)
             self.poly_degree = poly_degree
             self.interpolate = interpolate
+        self.x_offset_value = 0
     def show(self):
         """
         Plots the calibration data points and the associated model.
@@ -1284,13 +1294,14 @@ class RamanCalibration(Curve):
         """
         plt.figure()
         test_x = np.linspace(0, self.x.max(), 100)
-        plt.plot(test_x, self.interp_x(test_x))
+        plt.plot(test_x, self.interp_x(test_x) + self.x_offset_value)
         plt.plot(self.x, self.y, 'ko')
         plt.xlabel(self.x_label)
         plt.ylabel(self.y_label)
         plt.show()
     def save(self, file_path):
-        calibration_metadata = {'Calibration time': self.time, 'Polynomial order': self.interp_x.order}
+        calibration_metadata = {'Calibration time': self.time, 'Polynomial order': self.poly_degree,
+            'Interpolate': self.interpolate, 'x offset': self.x_offset_value}
         write_new_chada(file_path, self.x, self.y, calibration_metadata)
 
 
