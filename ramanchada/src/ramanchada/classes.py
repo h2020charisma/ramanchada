@@ -290,11 +290,15 @@ class Spectrum(Curve):
         else:
             self.bands = find_spectrum_peaks(x, y, prominence=prominence, sort_by=sort_by)
         if fit:
-            positions, widths, areas = fit_spectrum_peaks_pos(x, y,
-                self.bands['position'], method = fitmethod, interval_width=interval_width, show=show)
+            positions, widths, areas, positions_error, widths_error, areas_error = \
+                fit_spectrum_peaks_pos(x, y, self.bands['position'], method = fitmethod,\
+                    interval_width=interval_width, show=show)
             self.bands[fitmethod + ' fitted position'] = positions
             self.bands[fitmethod + ' fitted FWHM'] = widths
             self.bands[fitmethod + ' fitted area'] = areas
+            self.bands[fitmethod + ' position error'] = positions_error
+            self.bands[fitmethod + ' FWHM error'] = widths_error
+            self.bands[fitmethod + ' area error'] = areas_error
     @specstyle
     @mark_peaks
     def show_bands(self):
@@ -451,7 +455,8 @@ class RamanSpectrum(Spectrum):
         y_column_name : str
             > Name of the column holding the y data.
             
-        x_label : str, optional
+            
+            #      x_label : str, optional
             > Label for x data. The default is 'spectral index'.
             
         y_label : TYPE, optional

@@ -88,18 +88,27 @@ def fit_spectrum_peaks_pos(x, y, pos_in_x_units, method, interval_width=2, show=
     # 2x 1/e**2 is 1.699 x FWHM
     widths_in_x_units = np.array([max(w,10) for w in widths_in_x_units])      
     half_peak_widths = 1.699/2*widths_in_x_units
-    x_fit_pos = []
-    x_fit_width = []
-    x_fit_area = []
+    x_fit_pos, x_fit_width, x_fit_area = [], [], []
+    x_fit_pos_error, x_fit_width_error, x_fit_area_error = [], [], []
     methods = {'voigt': voigt_fit, 'lorentz': lorentz_fit, 'pearson': pearson4_fit, 
         'beta': beta_profile_fit, 'par': parabola_fit, 'gl': gauss_lorentz_fit, 'dvoigt': double_voigt_fit}
     for p, w in zip(pos_in_x_units, half_peak_widths):
         l = lims(x, p-interval_width*w, p+interval_width*w)
-        pos, width, area = methods[method](l(x), l(y), show=show)
+        fit_results = methods[method](l(x), l(y), show=show)
+        pos, width, area = fit_results[:3]
         x_fit_pos.append(pos)
         x_fit_width.append(width)
         x_fit_area.append(area)
-    return np.array(x_fit_pos), np.array(x_fit_width), np.array(x_fit_area)
+        # Most fit models yield errors (but some don't)
+        if len(fit_results) > 3:
+            pos_error, width_error, area_error = fit_results[3:6]
+        else:
+            pos_error, width_error, area_error = np.nan, np.nan, np.nan
+        x_fit_pos_error.append(pos_error)
+        x_fit_width_error.append(width_error)
+        x_fit_area_error.append(area_error)
+    return np.array(x_fit_pos), np.array(x_fit_width), np.array(x_fit_area),\
+        np.array(x_fit_pos_error), np.array(x_fit_width_error), np.array(x_fit_area_error)
 
 def voigt_fit(x, y, show=False):
     """
@@ -134,7 +143,8 @@ def voigt_fit(x, y, show=False):
     except RuntimeError:
         return np.nan, np.nan, np.nan
     #return fitpos, width, area
-    return get_function_properties(x, voigt, pars)
+    return *get_function_properties(x, voigt, pars),\
+        *compute_function_prop_errors(x, voigt, pars, pcov)
 
 def lorentz_fit(x, y, show=False):
     """
@@ -164,7 +174,8 @@ def lorentz_fit(x, y, show=False):
     except RuntimeError:
         return np.nan, np.nan, np.nan
     #return fitpos, width, area
-    return get_function_properties(x, lorentz, pars)
+    return *get_function_properties(x, lorentz, pars),\
+        *compute_function_prop_errors(x, lorentz, pars, pcov)
 
 def pearson4_fit(x, y, show=False):
     """
@@ -198,7 +209,8 @@ def pearson4_fit(x, y, show=False):
     except RuntimeError:
         return np.nan, np.nan, np.nan
     #return fitpos, width, area
-    return get_function_properties(x, pearson4, pars)
+    return *get_function_properties(x, pearson4, pars),\
+        *compute_function_prop_errors(x, pearson4, pars, pcov)
 
 def beta_profile_fit(x, y, show=False):
     """
@@ -229,7 +241,8 @@ def beta_profile_fit(x, y, show=False):
     except RuntimeError:
         return np.nan, np.nan, np.nan
     #return fitpos, width, area
-    return get_function_properties(x, beta_profile, pars)
+    return *get_function_properties(x, beta_profile, pars),\
+        *compute_function_prop_errors(x, beta_profile, pars, pcov)
 
 def double_voigt_fit(x, y, show=False):
     """
@@ -264,7 +277,8 @@ def double_voigt_fit(x, y, show=False):
     except RuntimeError:
         return np.nan, np.nan, np.nan
     #return fitpos, width, area
-    return get_function_properties(x, double_voigt, pars)
+    return *get_function_properties(x, double_voigt, pars),\
+        *compute_function_prop_errors(x, double_voigt, pars, pcov)
 
 def gauss_lorentz_fit(x, y, show=False):
     """
@@ -300,7 +314,8 @@ def gauss_lorentz_fit(x, y, show=False):
     except RuntimeError:
         return np.nan, np.nan, np.nan
     #return fitpos, width, area
-    return get_function_properties(x, gauss_lorentz, pars)
+    return *get_function_properties(x, gauss_lorentz, pars),\
+        *compute_function_prop_errors(x, double_voigt, pars, pcov)
 
 def parabola_fit(x, y, show=False):
     """
@@ -354,6 +369,22 @@ def get_function_properties(x, function, pars):
     # approximate area as Gaussian.
     area = y_fine.max() * width/2.3548*(2*np.pi)**.5
     return peak_pos, width, area
+
+def compute_function_prop_errors(x, function, pars, covariance_matrix):
+    # Compute one standard deviation errors on the parameters 
+    perr = np.sqrt(np.diag(covariance_matrix))
+    # Compute gradient
+    squared_sum_of_errors = 0
+    for ii, err in enumerate(perr):
+        p = pars.copy()
+        # Compute differenetial: changes for 10% of error (as 3x1 array)
+        delta_p_i = .1 * err
+        p[ii] += delta_p_i
+        diff = np.array( get_function_properties(x, function, p) ) - \
+            np.array( get_function_properties(x, function, pars) )
+        squared_sum_of_errors += (diff / delta_p_i * err) **2
+    # return 3x1 array of errors for peak_pos, width, area
+    return tuple( np.sqrt(squared_sum_of_errors) )
 
 def plot_fit_curve(x, y, fit_x, function, pars, fitpos, error):
     plt.figure()
