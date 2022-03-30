@@ -315,7 +315,7 @@ def gauss_lorentz_fit(x, y, show=False):
         return np.nan, np.nan, np.nan
     #return fitpos, width, area
     return *get_function_properties(x, gauss_lorentz, pars),\
-        *compute_function_prop_errors(x, double_voigt, pars, pcov)
+        *compute_function_prop_errors(x, gauss_lorentz, pars, pcov)
 
 def parabola_fit(x, y, show=False):
     """
