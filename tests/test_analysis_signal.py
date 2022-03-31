@@ -19,3 +19,13 @@ def test_snr_02():
         y = np.array(list(offset+x%2 for x in range(0,10)))
         snr = signal.snr(y)
         assert snr == 0.5
+
+
+# signal to noise ratio should be independent of the y-scale,
+# thus multiplying a scale to the sequence 0,1,0,1,.. 
+# should still result in snr of 0.5
+def test_snr_03():
+    for scale in [-7, 3, 13]:
+        y = np.array(list(17+scale*(x%2) for x in range(0,10)))
+        snr = signal.snr(y)
+        assert snr == 0.5
