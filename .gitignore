@@ -140,3 +140,10 @@ cython_debug/
 
 # CHADA files
 #*.cha
+
+# VisualStudio files
+/.vs/*
+/TestResults/*
+
+# Windows thumbnail files
+Thumbs.db
