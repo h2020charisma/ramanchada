@@ -19,6 +19,8 @@ def hqi(y1, y2):
     return np.linalg.norm(np.dot(y1, y2))**2 / np.linalg.norm(y1)**2 / np.linalg.norm(y2)**2
 
 def lims(x, x_min, x_max):
+    x_min = np.fmax(x_min, np.fmin(x[0], x[-1]))
+    x_max = np.fmin(x_max, np.fmax(x[0], x[-1]))
     y_min, y_max = np.argmin(np.abs(x-x_min)), np.argmin(np.abs(x-x_max))
     def l(Y):
         return Y[...,y_min:y_max+1]
