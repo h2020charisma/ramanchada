@@ -7,7 +7,7 @@ with open("README.md", "r") as fs:
 
 setup(
     name="ramanchada",
-    version="0.0.1",
+    version="0.0.2",
     author="Bastian Barton",
     author_email="bastian.Barton@lbf.fraunhofer.de",
     description="Raman spectra standardisation H2020 CHARISMA",
