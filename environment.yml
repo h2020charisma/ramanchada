@@ -11,6 +11,8 @@ dependencies:
   - path
   - pip
   - python<3.10
+  - ploomber
+  - openpyxl
   - scipy
   - seaborn
   - spectrochempy
