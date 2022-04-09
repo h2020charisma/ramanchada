@@ -64,8 +64,8 @@ def files2hsds(metadata,ramandb_api,hs_username,hs_password,hsds_investigation,h
                         sample = files["sample"] 
                         op_id = op["id"]
                         print(sample,op_id,laser_power,file_name)
-                    submit2hsds(file_name,ramandb_api,hs_username,hs_password,
-                        hsds_investigation,hsds_provider,hsds_instrument,hsds_wavelength,
+                        submit2hsds(file_name,ramandb_api,hs_username,hs_password,
+                            hsds_investigation,hsds_provider,hsds_instrument,hsds_wavelength,
                             op_id,sample,laser_power,log["results"])
             
 
