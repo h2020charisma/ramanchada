@@ -1,0 +1,13 @@
+
+folder_input: "/DATA/Projects/CHARISMA/RR1/FNMT-Madrid/BWTek_532nm/"
+file_metadata: "/DATA/Projects/CHARISMA/RR1/FNMT-Madrid/BWTek_532nm/FNMT-Madrid_iR532.xlsx"
+
+
+hsds_investigation: "SANDBOX"
+hsds_provider: "FNMT-Madrid"
+hsds_instrument: "BWTEK_IRAMAN"
+hsds_wavelength: 532
+
+ramandb_api: "https://https://api.charisma.ideaconsult.net/"
+hs_username: "changeit"
+hs_password: "changeit"
