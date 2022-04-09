@@ -1,0 +1,22 @@
+[
+    {
+        "folder_input": "FNMT-Madrid/BWTek_532nm/",
+        "file_metadata": "FNMT-Madrid/BWTek_532nm/FNMT-Madrid_iR532.xlsx",
+        
+        "hsds_provider": "FNMT-Madrid",
+        "hsds_instrument": "BWTEK_IRAMAN",
+        "hsds_wavelength": 532,
+        "delete" : true,
+        "enabled" : true    
+    },
+    {
+        "folder_input": "FNMT-Madrid/Horiba_785nm/",
+        "file_metadata": "FNMT-Madrid/Horiba_785nm/FNMT-Madrid_iR785.xlsx",
+        
+        "hsds_provider": "FNMT-Madrid",
+        "hsds_instrument": "HORIBA_LABRAM_IHR320",
+        "hsds_wavelength": 785,
+        "delete" : false,
+        "enabled" : true        
+    }
+]
