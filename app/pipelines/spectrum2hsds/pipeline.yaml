@@ -7,6 +7,8 @@ tasks:
       root_folder: "{{root_folder}}"
       config_input: "{{config_input}}"    
 
+# tbd task to create provider/instrument/wavelength ; if not existing the submit will fail
+
   - source: tasks.api.folders2hsds
     product: 
       data: products/logs/

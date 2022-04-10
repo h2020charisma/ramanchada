@@ -39,3 +39,9 @@ def test_load_data_file_into_object():
     chada_file = get_chada_file()
     if chada_file.exists():
         os.remove(chada_file)
+
+def test_file_open_close():
+    native_file = get_native_file("Polystyrene.spc")
+    co1 = RamanChada(native_file)
+    
+    co2 = RamanChada(native_file)    

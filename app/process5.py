@@ -231,7 +231,7 @@ def delete_datasets(domain):
         _deleted = []
         if n>0:
             for s in f._subdomains:
-                print(s["name"])
+
                 if not s["name"].endswith("metadata.h5"):
                     hsdel.deleteDomain(s["name"])
                     _deleted.append(s["name"])

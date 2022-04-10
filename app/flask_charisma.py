@@ -212,10 +212,11 @@ class ProcessDomainResource(Resource):
             #print(tr.to_dict());
             return tr.to_dict(), 400 
 
- #curl -X DELETE http://127.0.0.1:5000/dataset  -F "provider=FNMT-Madrid" -F "investigation=Round_Robin_1" -F "instrument=BWTek" -F "wavelength=532"  -u user
+ #curl -X DELETE http://127.0.0.1:5000/dataset  -d "provider=FNMT-Madrid" -d "investigation=Round_Robin_1" -d "instrument=BWTek" -d "wavelength=532"  -u user
     def delete(self):
         tr = TaskResult("DELETE /dataset")
         skip_paths=["optical_path","sample","laser_power"]
+        
         params = {}
         domain = None
         folder  = None
@@ -228,6 +229,7 @@ class ProcessDomainResource(Resource):
                 params[p] = None
                 try:
                     params[p]  = request.form[p]
+                    print(params[p])
                 except:
                     raise BadRequest("Missing {}".format(p))
 
@@ -246,7 +248,7 @@ class ProcessDomainResource(Resource):
         try:
             _deleted = process5.delete_datasets(domain)
             
-            tr.set_completed(' '.join(_deleted))
+            tr.set_completed(','.join(_deleted))
             return tr.to_dict()  ,200
         except HTTPException as err:
             tr.set_error(repr(err))

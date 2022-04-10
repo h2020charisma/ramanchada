@@ -18,5 +18,65 @@
         "hsds_wavelength": 785,
         "delete" : false,
         "enabled" : true        
-    }
+    },
+    {
+        "folder_input": "NTUA/InViaReflex 785nm/",
+        "file_metadata": "NTUA/InViaReflex 785nm/NTUA_inViaReflex_785.xlsx",
+        
+        "hsds_provider": "NTUA",
+        "hsds_instrument": "RENISHAW_inVia_Reflex",
+        "hsds_wavelength": 785,
+        "delete" : false,
+        "enabled" : false        
+    },    
+    {
+        "folder_input": "NTUA/InViaReflex 532nm/",
+        "file_metadata": "NTUA/InViaReflex 532nm/NTUA_inViaReflex_532.xlsx",
+        
+        "hsds_provider": "NTUA",
+        "hsds_instrument": "RENISHAW_inVia_Reflex",
+        "hsds_wavelength": 532,
+        "delete" : false,
+        "enabled" : false        
+    },    
+    {
+        "folder_input": "ICV-CSIC/Zolix/",
+        "file_metadata": "ICV-CSIC/Zolix/785 nm Zolix (updated)_IDEA.xlsx",
+        
+        "hsds_provider": "CSIC-ICV",
+        "hsds_instrument": "ZOLIX_Finder_edge",
+        "hsds_wavelength": 785,
+        "delete" : false,
+        "enabled" : false        
+    },    
+    {
+        "folder_input": "ICV-CSIC/Witec/",
+        "file_metadata": "ICV-CSIC/Witec/ICV_WITec_532.xlsx",
+        
+        "hsds_provider": "CSIC-ICV",
+        "hsds_instrument": "WITEC_Alpha__300RA",
+        "hsds_wavelength": 532,
+        "delete" : false,
+        "enabled" : false        
+    },    
+    {
+        "folder_input": "ICV-CSIC/iRPlus/532 nm",
+        "file_metadata": "ICV-CSIC/iRPlus/532 nm/532 nm (updated).xlsx",
+        
+        "hsds_provider": "CSIC-ICV",
+        "hsds_instrument": "BWTEK_iRaman_plus",
+        "hsds_wavelength": 532,
+        "delete" : false,
+        "enabled" : false        
+    },    
+    {
+        "folder_input": "ICV-CSIC/iRPlus/785 nm",
+        "file_metadata": "ICV-CSIC/iRPlus/785 nm/785 nm (updated).xlsx",
+        
+        "hsds_provider": "CSIC-ICV",
+        "hsds_instrument": "BWTEK_iRaman_plus",
+        "hsds_wavelength": 785,
+        "delete" : false,
+        "enabled" : false        
+    }               
 ]

@@ -20,6 +20,7 @@ import glob
 def submit2hsds(file_name,ramandb_api,hs_username,hs_password,
                 hsds_investigation,hsds_provider,hsds_instrument,hsds_wavelength,optical_path,sample,laser_power,metadata):
     domain = "/{}/{}/{}/{}/".format(hsds_investigation,hsds_provider,hsds_instrument,hsds_wavelength)
+
     api_dataset = "{}dataset?domain={}".format(ramandb_api,domain);
     formData = {"investigation" :hsds_investigation,
 	            "provider":hsds_provider,
@@ -54,15 +55,17 @@ def files2hsds(metadata,ramandb_api,hs_username,hs_password,hsds_investigation,h
             file_lookup[base].append(file_name)
         else:
             file_lookup[base]  = [file_name]
+    #print(file_lookup)
 
     for op in metadata["optical_path"]:
         for files in op["files"]:
             for file in files["file"]:
+                
                 if file in file_lookup:
+                    
                     for file_name in file_lookup[file]:
                         if file_name.endswith(".cha"):
                             continue
-                        print(file_name)
                         laser_power = "" if pd.isna(files["laser_power"]) else files["laser_power"]
                         sample = files["sample"] 
                         op_id = op["id"]
@@ -73,6 +76,8 @@ def files2hsds(metadata,ramandb_api,hs_username,hs_password,hsds_investigation,h
                                 op_id,sample,laser_power,log["results"])
                         except Exception as err:
                             print(err,sample,op_id,laser_power,file_name)
+                else:
+                    print("!!!!",file)
             
 
     log["files"] = file_lookup
