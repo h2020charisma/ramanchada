@@ -212,6 +212,52 @@ class ProcessDomainResource(Resource):
             #print(tr.to_dict());
             return tr.to_dict(), 400 
 
+ #curl -X DELETE http://127.0.0.1:5000/dataset  -F "provider=FNMT-Madrid" -F "investigation=Round_Robin_1" -F "instrument=BWTek" -F "wavelength=532"  -u user
+    def delete(self):
+        tr = TaskResult("DELETE /dataset")
+        skip_paths=["optical_path","sample","laser_power"]
+        params = {}
+        domain = None
+        folder  = None
+        try:
+            params = {} 
+      
+            for p in self.paths:
+                if p in skip_paths:
+                    continue
+                params[p] = None
+                try:
+                    params[p]  = request.form[p]
+                except:
+                    raise BadRequest("Missing {}".format(p))
+
+            domain,folder = check_paths(params,self.paths,skip_paths,False)
+            print(domain,folder)
+        except HTTPException as err:
+            print(err)
+            tr.set_error(str(err))
+            return tr.to_dict(), err.code   
+        except Exception as err:
+            print("!!!!",str(err))
+            tr.set_error(str(err))
+            return tr.to_dict(), BadRequest.code   
+      
+       
+        try:
+            _deleted = process5.delete_datasets(domain)
+            
+            tr.set_completed(' '.join(_deleted))
+            return tr.to_dict()  ,200
+        except HTTPException as err:
+            tr.set_error(repr(err))
+            return tr.to_dict(), err.code           
+        except Exception as err:
+            print(err)
+            tr.set_error(repr(err))
+            #print(tr.to_dict());
+            return tr.to_dict(), 400 
+
+
 from flask.json import JSONEncoder
 
 class StudyRegistrationResource(ProcessDomainResource):

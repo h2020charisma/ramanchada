@@ -85,7 +85,7 @@ class StudyRegistration:
                 brand = _tag_instrument[ParamsRaman.BRAND.value],
                 model=_tag_instrument[ParamsRaman.MODEL.value],
                 wavelength=_tag_instrument[ParamsRaman.WAVELENGTH.value]);
-        print(metadata)
+        
         params[self._tag_instrument] = self.get_instrument_id(metadata[self._tag_instrument])
         params[ParamsRaman.WAVELENGTH.value] = metadata[self._tag_instrument][ParamsRaman.WAVELENGTH.value]
             
@@ -156,7 +156,7 @@ class StudyRegistration:
            
 
     def opticalpaths2h5(self,instrument,h5_group):
-        print(">>",instrument)
+        
         try:
             _g_ops = h5_group.require_group(self._tag_optical_paths)
             #remove optical paths which are not in the current list

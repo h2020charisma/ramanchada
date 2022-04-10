@@ -77,7 +77,7 @@ def get_file_annotations(file=None):
     annotation = {}
     datasets = []
     for key in file.keys():
-        print(key)
+        
         if key=="annotation_sample":
             for item in file[key].attrs:
                 annotation[item]=file[key].attrs[item] 
@@ -87,8 +87,7 @@ def get_file_annotations(file=None):
         else:
             datasets.append({"key" : key, "uuid" : file[key].id.uuid, "name" : file[key].name, 
                                 "shape" : file[key].shape, "size" : file[key].size})   
-    print(annotation)
-    print(datasets)
+    
     return annotation,datasets
 
 def check_folder(domain="/Round_Robin_1/",create=False):
@@ -189,7 +188,7 @@ def load_native(file,f_name,destination_domain,params={}):
   
 from ramanchada.classes import RamanChada
 def load_domain(url,raw=True):
-    print(url)
+    
     f = None
     try:
         #url="/Round_Robin_1/LBF/nCAL10_iR532_Probe_005_2500msx3.cha"
@@ -207,16 +206,37 @@ def load_domain(url,raw=True):
 import h5pyd._apps.hsdel as hsdel
 def delete_domain_recursive(fname):
     try:
-           #print(fname)
-        f = h5pyd.Folder(fname+"/")
+        _fname = fname
+        if fname.endswith("/"):
+            _fname = fname
+        else:
+            _fname = fname + "/"
+        f = h5pyd.Folder(_fname)
         n = f._getSubdomains()
         if n>0:
             for s in f._subdomains:
-                    #print(s["name"])
                 delete_domain_recursive(s["name"])
     except Exception as err:
         raise err
+
     try:  
         hsdel.deleteDomain(fname)
     except Exception as err:
         raise err
+
+def delete_datasets(domain):
+    try:
+        f = h5pyd.Folder(domain)
+        n = f._getSubdomains()
+        _deleted = []
+        if n>0:
+            for s in f._subdomains:
+                print(s["name"])
+                if not s["name"].endswith("metadata.h5"):
+                    hsdel.deleteDomain(s["name"])
+                    _deleted.append(s["name"])
+        return _deleted
+    except Exception as err:
+        raise err
+        
+     
