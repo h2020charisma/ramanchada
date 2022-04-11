@@ -20,6 +20,7 @@ tasks:
       hs_username: "{{hs_username}}"
       hs_password: "{{hs_password}}"
       hsds_investigation: "{{hsds_investigation}}"
+      dry_run: "{{dry_run}}"
 
       
 

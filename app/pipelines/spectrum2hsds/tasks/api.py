@@ -7,6 +7,7 @@ ramandb_api = None
 hs_username = None
 hs_password = None
 hsds_investigation = None
+dry_run = None
 
 # -
 
@@ -38,7 +39,7 @@ def submit2hsds(file_name,ramandb_api,hs_username,hs_password,
     
 import pandas as pd
 
-def files2hsds(metadata,ramandb_api,hs_username,hs_password,hsds_investigation,hsds_provider,hsds_instrument,hsds_wavelength,log_file):
+def files2hsds(metadata,ramandb_api,hs_username,hs_password,hsds_investigation,hsds_provider,hsds_instrument,hsds_wavelength,log_file,dry_run):
     folder_input = metadata["folder_input"]
     log = {"results" : {}}
     spectra_files = glob.glob(os.path.join(folder_input,"**","*"), recursive=True)
@@ -63,6 +64,7 @@ def files2hsds(metadata,ramandb_api,hs_username,hs_password,hsds_investigation,h
             file_lookup[base]  = [file_name]
     #print(file_lookup)
 
+    _notfound = []
     for op in metadata["optical_path"]:
         for files in op["files"]:
             for file in files["file"]:
@@ -76,17 +78,21 @@ def files2hsds(metadata,ramandb_api,hs_username,hs_password,hsds_investigation,h
                         sample = files["sample"] 
                         op_id = op["id"]
 
-                        try:
-                            submit2hsds(file_name,ramandb_api,hs_username,hs_password,
-                                hsds_investigation,hsds_provider,hsds_instrument,hsds_wavelength,
-                                op_id,sample,laser_power,log["results"])
-                        except Exception as err:
-                            print(err,sample,op_id,laser_power,file_name)
+                        if dry_run:
+                            pass
+                        else:
+                            try:
+                                submit2hsds(file_name,ramandb_api,hs_username,hs_password,
+                                    hsds_investigation,hsds_provider,hsds_instrument,hsds_wavelength,
+                                    op_id,sample,laser_power,log["results"])
+                            except Exception as err:
+                                print(err,sample,op_id,laser_power,file_name)
                 else:
-                    print("!!!!",file)
+                    _notfound.append(file)
             
 
     log["files"] = file_lookup
+    log["not_found"] = _notfound
     with open(log_file, "w",encoding="utf-8") as write_file:
         json.dump(log, write_file, sort_keys=True, indent=4)    
 
@@ -103,7 +109,7 @@ def delete_datasets(hsds_investigation,hsds_provider,hsds_instrument,
     except:
         pass
 
-def folders2hsds(config_input,metadata_root,ramandb_api,hs_username,hs_password,hsds_investigation,product):
+def folders2hsds(config_input,metadata_root,ramandb_api,hs_username,hs_password,hsds_investigation,product,dry_run):
     
     with open(config_input, 'r') as infile:
         config = json.load(infile)
@@ -123,5 +129,5 @@ def folders2hsds(config_input,metadata_root,ramandb_api,hs_username,hs_password,
                     hsds_wavelength)
             files2hsds(metadata,ramandb_api,hs_username,hs_password,
                     hsds_investigation,hsds_provider,hsds_instrument,
-                    hsds_wavelength,log_file)
+                    hsds_wavelength,log_file,dry_run)
     

@@ -7,3 +7,6 @@ hsds_investigation: "SANDBOX"
 ramandb_api: "http://127.0.0.1:5000/"
 hs_username: "changeit"
 hs_password: "changeit"
+
+#if true do not submit to hsds
+dry_run: True
