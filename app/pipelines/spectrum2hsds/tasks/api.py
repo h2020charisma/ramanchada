@@ -21,7 +21,7 @@ def submit2hsds(file_name,ramandb_api,hs_username,hs_password,
                 hsds_investigation,hsds_provider,hsds_instrument,hsds_wavelength,optical_path,sample,laser_power,metadata):
     domain = "/{}/{}/{}/{}/".format(hsds_investigation,hsds_provider,hsds_instrument,hsds_wavelength)
 
-    api_dataset = "{}dataset?domain={}".format(ramandb_api,domain);
+    api_dataset = "{}dataset?domain={}".format(ramandb_api,domain)
     formData = {"investigation" :hsds_investigation,
 	            "provider":hsds_provider,
 	            "instrument": hsds_instrument,
@@ -46,6 +46,12 @@ def files2hsds(metadata,ramandb_api,hs_username,hs_password,hsds_investigation,h
     for file_name in spectra_files:
         if file_name.endswith(".xlsx"):
             continue
+        if file_name.endswith(".html"):
+            continue       
+        if file_name.endswith(".ipynb"):
+            continue    
+        if file_name.endswith(".l6s"): # not supported spectrum file
+            continue                      
         if os.path.isdir(file_name):
             continue
         basename = os.path.basename(file_name)
@@ -84,20 +90,38 @@ def files2hsds(metadata,ramandb_api,hs_username,hs_password,hsds_investigation,h
     with open(log_file, "w",encoding="utf-8") as write_file:
         json.dump(log, write_file, sort_keys=True, indent=4)    
 
+def delete_datasets(hsds_investigation,hsds_provider,hsds_instrument,
+                    hsds_wavelength):
+    api_dataset = "{}dataset".format(ramandb_api);                
+    formData = {"investigation" :hsds_investigation,
+	            "provider":hsds_provider,
+	            "instrument": hsds_instrument,
+		        "wavelength": hsds_wavelength
+            }
+    try:
+        response = requests.post(api_dataset, data=formData)
+    except:
+        pass
+
 def folders2hsds(config_input,metadata_root,ramandb_api,hs_username,hs_password,hsds_investigation,product):
     
     with open(config_input, 'r') as infile:
         config = json.load(infile)
     for entry in config:
         if entry["enabled"]:
+            hsds_provider = entry["hsds_provider"]
+            hsds_instrument = entry["hsds_instrument"]
+            hsds_wavelength = entry["hsds_wavelength"]
             json_metadata = os.path.join(metadata_root,"metadata_{}_{}_{}.json".
-                format(entry["hsds_provider"],entry["hsds_instrument"],entry["hsds_wavelength"]))
+                format(hsds_provider,hsds_instrument,hsds_wavelength))
             log_file = os.path.join(product["data"],"log_{}_{}_{}.json".
-                format(entry["hsds_provider"],entry["hsds_instrument"],entry["hsds_wavelength"]))
+                format(hsds_provider,hsds_instrument,hsds_wavelength))
             with open(json_metadata, 'r') as infile:
                 metadata = json.load(infile)
-
+            if entry["delete"]:
+                delete_datasets(hsds_investigation,hsds_provider,hsds_instrument,
+                    hsds_wavelength)
             files2hsds(metadata,ramandb_api,hs_username,hs_password,
-                    hsds_investigation,entry["hsds_provider"],entry["hsds_instrument"],
-                    entry["hsds_wavelength"],log_file)
+                    hsds_investigation,hsds_provider,hsds_instrument,
+                    hsds_wavelength,log_file)
     
