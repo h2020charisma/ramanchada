@@ -7,7 +7,7 @@
         "hsds_instrument": "BWTEK_IRAMAN",
         "hsds_wavelength": 532,
         "delete" : true,
-        "enabled" : true    
+        "enabled" : false    
     },
     {
         "folder_input": "FNMT-Madrid/Horiba_785nm/",
@@ -16,8 +16,8 @@
         "hsds_provider": "FNMT-Madrid",
         "hsds_instrument": "HORIBA_LABRAM_IHR320",
         "hsds_wavelength": 785,
-        "delete" : false,
-        "enabled" : true        
+        "delete" : true,
+        "enabled" : false        
     },
     {
         "folder_input": "NTUA/InViaReflex 785nm/",
@@ -26,7 +26,7 @@
         "hsds_provider": "NTUA",
         "hsds_instrument": "RENISHAW_inVia_Reflex",
         "hsds_wavelength": 785,
-        "delete" : false,
+        "delete" : true,
         "enabled" : false        
     },    
     {
@@ -36,7 +36,7 @@
         "hsds_provider": "NTUA",
         "hsds_instrument": "RENISHAW_inVia_Reflex",
         "hsds_wavelength": 532,
-        "delete" : false,
+        "delete" : true,
         "enabled" : false        
     },    
     {
@@ -51,12 +51,12 @@
     },    
     {
         "folder_input": "ICV-CSIC/Witec/",
-        "file_metadata": "ICV-CSIC/Witec/ICV_WITec_532.xlsx",
+        "file_metadata": "ICV-CSIC/Witec/ICV_WITec_532_IDEA.xlsx",
         
         "hsds_provider": "CSIC-ICV",
         "hsds_instrument": "WITEC_Alpha__300RA",
         "hsds_wavelength": 532,
-        "delete" : false,
+        "delete" : true,
         "enabled" : false        
     },    
     {
@@ -66,7 +66,7 @@
         "hsds_provider": "CSIC-ICV",
         "hsds_instrument": "BWTEK_iRaman_plus",
         "hsds_wavelength": 532,
-        "delete" : false,
+        "delete" : true,
         "enabled" : false        
     },    
     {
@@ -76,7 +76,27 @@
         "hsds_provider": "CSIC-ICV",
         "hsds_instrument": "BWTEK_iRaman_plus",
         "hsds_wavelength": 785,
-        "delete" : false,
+        "delete" : true,
         "enabled" : false        
-    }               
+    },
+    {
+        "folder_input": "LBF/532 nm",
+        "file_metadata": "LBF/532 nm/LBF_WITecAlpha_532nm.xlsx",
+        
+        "hsds_provider": "FraunhoferLBF",
+        "hsds_instrument": "WITEC_Alpha_500",
+        "hsds_wavelength": 532,
+        "delete" : false,
+        "enabled" : true        
+    },    
+    {
+        "folder_input": "LBF/785 nm",
+        "file_metadata": "LBF/Excel evaluation sheets/LBF_WITecAlpha_785nm.xlsx",
+        
+        "hsds_provider": "FraunhoferLBF",
+        "hsds_instrument": "WITEC_Alpha_500",
+        "hsds_wavelength": 785,
+        "delete" : true,
+        "enabled" : false        
+    }            
 ]
