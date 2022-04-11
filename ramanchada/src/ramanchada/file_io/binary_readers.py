@@ -40,83 +40,83 @@ def readSPA(filename, flip = True):
     return k, spec, {}
 
 def read_ngs(file, show=True):
-    f = open(file, "rb")
-    # read NextGen string
-    s = f.read(10)
-    # if the string does not match, abort
-    nextgen_string = s.decode("utf-8").lower()
-    if nextgen_string != 'ngsnextgen':
-        print('Not a readable file !')
-        return
-    # read DataMatrix string form byte #18
-    s = f.seek(18)
-    # read length of string as single byte
-    s = f.read(1)
-    l = int.from_bytes(s, "big") 
-    # read the actual string
-    s = f.read(l)
-    datamatrix_string =  s.decode("utf-8").lower()
-    # if the string does not match, abort
-    if datamatrix_string != 'datamatrix':
-        print('Not a readable file !')
-        return
-    # read filename at byte #38
-    s = f.seek(38)
-    # read length of string as single byte
-    s = f.read(1)
-    l = int.from_bytes(s, "big")
-    # read the actual string
-    s = f.read(l)
-    file_name = s.decode("utf-8")
-    # Read no. of channels as 32 bit integer, 16 bytes from end of filename
-    s = f.seek(16, 1)
-    s = f.read(4)
-    n = struct.unpack('i', s)[0]
-    print(f'Reading Labspec .ngs file {file_name} with {n} channels.')
-    # Read data block, starting 8 bytes from end of channel num. Each y count is a 32 bit integer.
-    y = read_4byte_datablock(f, n, 8)
-    # Read parameter block. Before, there's a rather complicated sequence of skipping obsolete parameters...
-    f.seek(2, 1)
-    s = f.read(1)
-    l = int.from_bytes(s, "big")
-    # Skip bytes as long as they are zeros
-    if l == 0:
-        while l == 0:
-            s = f.read(1)
-            l = int.from_bytes(s, "big")
-        f.seek(1, 1)
+    with open(file, "rb") as f:
+        # read NextGen string
+        s = f.read(10)
+        # if the string does not match, abort
+        nextgen_string = s.decode("utf-8").lower()
+        if nextgen_string != 'ngsnextgen':
+            print('Not a readable file !')
+            return
+        # read DataMatrix string form byte #18
+        s = f.seek(18)
+        # read length of string as single byte
+        s = f.read(1)
+        l = int.from_bytes(s, "big") 
+        # read the actual string
+        s = f.read(l)
+        datamatrix_string =  s.decode("utf-8").lower()
+        # if the string does not match, abort
+        if datamatrix_string != 'datamatrix':
+            print('Not a readable file !')
+            return
+        # read filename at byte #38
+        s = f.seek(38)
+        # read length of string as single byte
         s = f.read(1)
         l = int.from_bytes(s, "big")
-    #
-    f.seek(l, 1)
-    s = f.read(1)
-    l = int.from_bytes(s, "big")
-    #
-    f.seek(l, 1)
-    f.seek(2, 1)
-    s = f.read(1)
-    l = int.from_bytes(s, "big")
-    #
-    f.seek(l, 1)
-    s = f.read(1)
-    l = int.from_bytes(s, "big")
-    #
-    f.seek(l, 1)
-    f.seek(16, 1)
-    # Finally, read the start and end wavenumbers (start_x)
-    s = f.read(4)
-    start_x = struct.unpack('f', s)[0]
-    s = f.read(4)
-    end_x = struct.unpack('f', s)[0]
-    # Check whether end_x is equal to no. of channels
-    if end_x == n:
-        x = read_4byte_datablock(f, n, 20)
-    else:
-        # Construct x axis
-        x = np.linspace(start_x, end_x, n)
-    meta = read_ngs_meta(f)
-    f.close()
-    # plot
+        # read the actual string
+        s = f.read(l)
+        file_name = s.decode("utf-8")
+        # Read no. of channels as 32 bit integer, 16 bytes from end of filename
+        s = f.seek(16, 1)
+        s = f.read(4)
+        n = struct.unpack('i', s)[0]
+        print(f'Reading Labspec .ngs file {file_name} with {n} channels.')
+        # Read data block, starting 8 bytes from end of channel num. Each y count is a 32 bit integer.
+        y = read_4byte_datablock(f, n, 8)
+        # Read parameter block. Before, there's a rather complicated sequence of skipping obsolete parameters...
+        f.seek(2, 1)
+        s = f.read(1)
+        l = int.from_bytes(s, "big")
+        # Skip bytes as long as they are zeros
+        if l == 0:
+            while l == 0:
+                s = f.read(1)
+                l = int.from_bytes(s, "big")
+            f.seek(1, 1)
+            s = f.read(1)
+            l = int.from_bytes(s, "big")
+        #
+        f.seek(l, 1)
+        s = f.read(1)
+        l = int.from_bytes(s, "big")
+        #
+        f.seek(l, 1)
+        f.seek(2, 1)
+        s = f.read(1)
+        l = int.from_bytes(s, "big")
+        #
+        f.seek(l, 1)
+        s = f.read(1)
+        l = int.from_bytes(s, "big")
+        #
+        f.seek(l, 1)
+        f.seek(16, 1)
+        # Finally, read the start and end wavenumbers (start_x)
+        s = f.read(4)
+        start_x = struct.unpack('f', s)[0]
+        s = f.read(4)
+        end_x = struct.unpack('f', s)[0]
+        # Check whether end_x is equal to no. of channels
+        if end_x == n:
+            x = read_4byte_datablock(f, n, 20)
+        else:
+            # Construct x axis
+            x = np.linspace(start_x, end_x, n)
+        meta = read_ngs_meta(f)
+
+        # plot
     if show:
         plt.figure()
         plt.plot(x,y)
