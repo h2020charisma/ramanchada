@@ -23,7 +23,8 @@ def read_opticalpath(sheet_name,file_metadata):
             for sample in range(0,len(tag_sample),1):
                 file_name = op_sheet.iloc[start_row+sample][11]
                 if not pd.isna(file_name):
-                    files = file_name.split(",")
+                    files = file_name.strip().replace("\n",",").split(",")
+                    files = [s.strip() for s in files]
                     tmp.append({"sample" : tag_sample[sample],"file" : files , "laser_power" : op_sheet.iloc[start_row][4]})
             start_row = start_row + offset_row
             if start_row>op_sheet.shape[0]:
