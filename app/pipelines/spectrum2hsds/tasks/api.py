@@ -110,7 +110,8 @@ def delete_datasets(hsds_investigation,hsds_provider,hsds_instrument,
         pass
 
 def folders2hsds(config_input,metadata_root,ramandb_api,hs_username,hs_password,hsds_investigation,product,dry_run):
-    
+    if not os.path.exists(product["data"]):
+        os.mkdir(product["data"])
     with open(config_input, 'r') as infile:
         config = json.load(infile)
     for entry in config:

@@ -73,7 +73,8 @@ def get(folder_input,file_metadata,product_metadata):
 
 
 def read_metadata(root_folder,config_input,product):
-
+    if not os.path.exists(product["data"]):
+        os.mkdir(product["data"])
     with open(config_input, 'r') as infile:
         config = json.load(infile)
     for entry in config:
