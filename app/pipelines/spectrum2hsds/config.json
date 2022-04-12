@@ -7,7 +7,7 @@
         "hsds_instrument": "BWTEK_IRAMAN",
         "hsds_wavelength": 532,
         "delete" : true,
-        "enabled" : true    
+        "enabled" : false    
     },
     {
         "folder_input": "FNMT-Madrid/Horiba_785nm/",
@@ -98,5 +98,25 @@
         "hsds_wavelength": 785,
         "delete" : true,
         "enabled" : false        
-    }            
+    },    
+    {
+        "folder_input": "ICP-CSIC",
+        "file_metadata": "ICP-CSIC/Renishaw_405nm/CSIC_Qontor_405_RP.xlsx",
+        
+        "hsds_provider": "CSIC-ICP",
+        "hsds_instrument": "RENISHAW_InVia_Qontor",
+        "hsds_wavelength": 405,
+        "delete" : true,
+        "enabled" : true        
+    },    
+    {
+        "folder_input": "ICP-CSIC",
+        "file_metadata": "ICP-CSIC/Renishaw_514nm/CSIC_Qontor_514-RP.xlsx",
+        
+        "hsds_provider": "CSIC-ICP",
+        "hsds_instrument": "RENISHAW_InVia_Qontor",
+        "hsds_wavelength": 514,
+        "delete" : true,
+        "enabled" : false        
+    }                  
 ]
