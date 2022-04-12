@@ -22,5 +22,12 @@ tasks:
       hsds_investigation: "{{hsds_investigation}}"
       dry_run: "{{dry_run}}"
 
-      
+  - source: tasks/process.py
+    product: 
+      data: products/peaks/
+      nb: products/process.ipynb
+    params:
+      hsds_investigation: "{{hsds_investigation}}"
+      config_input: "{{config_input}}"
+      dry_run: "{{dry_run}}"        
 
