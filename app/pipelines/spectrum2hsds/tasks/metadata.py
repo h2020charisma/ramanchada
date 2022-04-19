@@ -7,7 +7,7 @@ config_input = None
 
 from re import L
 import pandas as pd
-import os,path
+import os.path
 import json
 
 def read_opticalpath(sheet_name,file_metadata):
@@ -34,9 +34,8 @@ def read_opticalpath(sheet_name,file_metadata):
         pass
     
     return tmp
-    
-def get(folder_input,file_metadata,product_metadata):
 
+def xlsx_to_dict(folder_input, file_metadata):
     front_sheet = pd.read_excel(file_metadata,sheet_name="Front sheet",header=None)
     front_sheet.fillna("",inplace=True)
     
@@ -67,9 +66,37 @@ def get(folder_input,file_metadata,product_metadata):
             row=row+1
     except Exception as err:
         pass
-        
+
+    return metadata
+
+
+def get(folder_input,file_metadata,product_metadata):
+    metadata = xlsx_to_dict(folder_input, file_metadata)
     with open(product_metadata, "w",encoding="utf-8") as write_file:
         json.dump(metadata, write_file, sort_keys=True, indent=4)    
+
+def metadata_flatten(data):
+    return [
+            dict(
+                file_metadata=data['file_metadata'],
+                instrument=data['instrument'],
+                collection_optics=optical_path['collection_optics'],
+                collection_fibre_diameter=optical_path['collection_fibre_diameter'],
+                file=file,
+                laser_power=files['laser_power'],
+                sample=files['sample'],
+                gratings=optical_path['gratings'],
+                id=optical_path['id'],
+                notes=optical_path['notes'],
+                pin_hole_size=optical_path['pin_hole_size'],
+                slit_size=optical_path['slit_size'],
+                provider=data['provider'],
+                wavelength=data['wavelength']
+                )
+            for optical_path in data['optical_path']
+            for files in optical_path['files']
+            for file in files['file']
+            ]
 
 
 def read_metadata(root_folder,config_input,product):
@@ -86,3 +113,4 @@ def read_metadata(root_folder,config_input,product):
             folder_input = os.path.join(root_folder,entry["folder_input"])
             file_metadata = os.path.join(root_folder,entry["file_metadata"])
             get(folder_input,file_metadata,product_metadata)
+
