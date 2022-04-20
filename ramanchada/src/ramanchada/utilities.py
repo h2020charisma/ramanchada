@@ -18,13 +18,19 @@ def hqi(y1, y2):
     # instruments. Analyst, 2011. 136(20): p. 4232-4240.
     return np.linalg.norm(np.dot(y1, y2))**2 / np.linalg.norm(y1)**2 / np.linalg.norm(y2)**2
 
-def lims(x, x_min, x_max):
-    x_min = np.fmax(x_min, np.fmin(x[0], x[-1]))
-    x_max = np.fmin(x_max, np.fmax(x[0], x[-1]))
-    y_min, y_max = np.argmin(np.abs(x-x_min)), np.argmin(np.abs(x-x_max))
-    def l(Y):
-        return Y[...,y_min:y_max+1]
+def lims(x, xmin, xmax):
+    def l(y):
+        return y[(x>xmin) & (x<xmax)]
     return l
+
+#def lims(x, x_min, x_max):
+#    x_min = np.fmax(x_min, np.fmin(x[0], x[-1]))
+#    x_max = np.fmin(x_max, np.fmax(x[0], x[-1]))
+#    #y_min, y_max = np.argmin(np.abs(x-x_min)), np.argmin(np.abs(x-x_max))
+##    y_min, y_max = np.argmin(np.abs(x-x_max)),np.argmin(np.abs(x-x_min))
+#    def l(Y):
+#        return Y[...,y_min:y_max+1]
+#    return l
 
 def interpolation_within_bounds(cal_x, cal_y, poly_degree):
     coeffs = np.polyfit(cal_x, cal_y, poly_degree)
