@@ -247,7 +247,7 @@ class Spectrum(Curve):
         self.y -= self.y.min()
 
     def peaks(self, prominence=0.05, x_min=-1e9, x_max=1e9, cwt=False, fit=True, fitmethod = 'voigt', interval_width=2, cwt_width=20,
-              sort_by='prominence', show=False):
+              sort_by='prominence',smooth=False, show=False):
         """
         Automated detection and analysis of peaks.
 
@@ -288,7 +288,7 @@ class Spectrum(Curve):
         if cwt:
             self.bands = find_spectrum_peaks_cwt(x, y, width=cwt_width, sort_by='intensity')
         else:
-            self.bands = find_spectrum_peaks(x, y, prominence=prominence, sort_by=sort_by)
+            self.bands = find_spectrum_peaks(x, y, prominence=prominence, sort_by=sort_by,smooth=smooth)
         if fit:
             positions, widths, areas, positions_error, widths_error, areas_error = \
                 fit_spectrum_peaks_pos(x, y, self.bands['position'], method = fitmethod,\
