@@ -490,15 +490,15 @@ class RamanSpectrum(Spectrum):
     def reset_x(self):
         self.x = np.arange( len(self.y) )
         self.x_label = 'Spectrum channel no.'
-    def make_x_axis(self, x_peak_positions_dict, x_unit='Raman shift [rel. 1/cm]', show=False):
+    def make_x_axis(self, x_peak_positions_dict, x_unit='Raman shift [rel. 1/cm]', show=False, column='position',order=3):
         # Note: peaks must be discovered first with .peaks() method, so that .bands attribute exists.
         # merge x_peak_positions_dict with 'position' column of .bands by index
-        found_positions = self.bands['position']
+        found_positions = self.bands[column]
         selected_found_positions = np.array( [found_positions[peak_index] for peak_index in x_peak_positions_dict.keys()] )
         reference_positions = np.array([v for v in x_peak_positions_dict.values()])
         # generate & return RamanCalibration with polynomial degree=1 (linear interpolation)
         axis_data = pd.DataFrame( {'original x: ' + self.x_label: selected_found_positions, x_unit: reference_positions} )
-        x_axis = RamanCalibration(data=axis_data, poly_degree=1, interpolate=True)
+        x_axis = RamanCalibration(data=axis_data, poly_degree=order, interpolate=True)
         if show:
             x_axis.show()
         return x_axis
