@@ -9,6 +9,8 @@ from re import L
 import pandas as pd
 import os.path
 import json
+import glob
+
 
 def read_opticalpath(sheet_name,file_metadata):
     
@@ -97,6 +99,31 @@ def metadata_flatten(data):
             for files in optical_path['files']
             for file in files['file']
             ]
+
+
+def scan_for_metadata_flatten(base_data_dir, extensions=['txt']):
+    xls_files = glob.glob(f'{base_data_dir}/**/*.xlsx', recursive=True)
+    ret = list()
+    for xls in xls_files:
+        try:
+            dirname = os.path.dirname(xls)
+            data = xlsx_to_dict(os.path.dirname(xls), xls)
+            flat = metadata_flatten(data)
+            for ff in flat:
+                for ext in extensions:
+                    ff_cpy = ff.copy()
+                    filepath = glob.glob(f"{dirname}/**/{ff_cpy['file']}.{ext}", recursive=True)
+                    if len(filepath) == 0:
+                        continue
+                    elif len(filepath) != 1:
+                        print(f'len(filepath) = {len(filepath)}, {filepath}')
+                        continue
+                    ff_cpy['file'] = filepath[0]
+                    ff_cpy['file_format'] = ext
+                    ret.append(ff_cpy)
+        except Exception as e:
+            print(f'{e} {xls}')
+    return ret
 
 
 def read_metadata(root_folder,config_input,product):
