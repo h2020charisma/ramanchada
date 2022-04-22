@@ -26,8 +26,19 @@ tasks:
     product: 
       data: products/peaks/
       nb: products/process.ipynb
-    params:
+    params:   
       hsds_investigation: "{{hsds_investigation}}"
       config_input: "{{config_input}}"
-      dry_run: "{{dry_run}}"        
+      dry_run: "{{dry_run}}"      
+
+  - source: tasks/datamodel.py
+    product: 
+      data: "{{charisma_json}}"
+      nb: products/datamodel.ipynb
+    params:
+      hs_endpoint: "{{hs_endpoint}}"
+      hs_username: "{{hs_username}}"
+      hs_password: "{{hs_password}}"     
+      hsds_investigation: "{{hsds_investigation}}"
+      config_input: "{{config_input}}"
 
