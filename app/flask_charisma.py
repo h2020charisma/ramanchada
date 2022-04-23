@@ -85,21 +85,27 @@ class ProcessDomainResource(Resource):
         self.create_folders = False
         pass
 
-    def read_file(self,domain,result,read_values=False):
+    def read_file(self,domain,result,read_values=False,filter={"sample" : None}):
         with process5.read_file(domain) as file:
-            tmp,datasets = process5.get_file_annotations(file,read_values)
-
-            result["annotation"].append(tmp)  
-            result["datasets"] = datasets
+            tmp,datasets = process5.get_file_annotations(file,read_values,filter)
+            if tmp is None or datasets is None:
+                return result
+            else:
+                result["annotation"].append(tmp)  
+                result["datasets"] = datasets
         return result
 
     def get(self):
-        print("get")
         tr = None
         try:
             read_values = request.args.get('values').upper() == "TRUE"
         except Exception as err:
             read_values = False
+        try:
+            sample = request.args.get('sample')
+        except Exception as err:
+            sample = None     
+               
         try:
             domain = request.args.get('domain')
             tr = TaskResult(name=domain)
@@ -120,13 +126,16 @@ class ProcessDomainResource(Resource):
 
                     for s in folder._subdomains:
                         subdomain = {"name" : s["name"], "annotation" : [], "last_segment" : s["name"].split("/")[-1]}
-                        
+
                         try:
                             with process5.read_file(s["name"]) as file:
-                                tmp,datasets = process5.get_file_annotations(file,read_values)
-                                subdomain["annotation"].append(tmp) 
-                                subdomain["datasets"] = datasets
-                                pass
+                                tmp,datasets = process5.get_file_annotations(file,read_values,filter={"sample" : sample})
+                                if tmp is None or datasets is None:
+                                    pass
+                                else:
+                                    subdomain["annotation"].append(tmp)  
+                                    subdomain["datasets"] = datasets
+                                
                         except Exception as err:
                             print(err)
                             pass                       
@@ -134,7 +143,7 @@ class ProcessDomainResource(Resource):
 
                 return  result,  200                
             else:
-                self.read_file(domain,result,read_values)
+                self.read_file(domain,result,read_values,filter={"sample" : sample})
        
                 return  result,  200 
         except Exception as err:

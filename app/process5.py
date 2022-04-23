@@ -73,10 +73,18 @@ def read_file(domain=None):
     except IOError as err:
         raise err
 
-def get_file_annotations(file=None,read_values=False):
+def get_file_annotations(file=None,read_values=False,filter={"sample" : None}):
     
     annotation = {}
     datasets = []
+
+    #print(filter)
+    if filter is None or filter["sample"] is None:
+        pass
+    else:
+        if file["annotation_sample"].attrs["sample"]!= filter["sample"]:
+            return None, None
+
     for key in file.keys():
         
         if key=="annotation_sample":
