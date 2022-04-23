@@ -83,19 +83,23 @@ class ProcessDomainResource(Resource):
     def __init__(self):
         self.paths = ["investigation","provider","instrument","wavelength","optical_path","sample","laser_power"]
         self.create_folders = False
-        
         pass
 
-    def read_file(self,domain,result):
+    def read_file(self,domain,result,read_values=False):
         with process5.read_file(domain) as file:
-            tmp,datasets = process5.get_file_annotations(file)
+            tmp,datasets = process5.get_file_annotations(file,read_values)
 
             result["annotation"].append(tmp)  
             result["datasets"] = datasets
         return result
 
     def get(self):
+        print("get")
         tr = None
+        try:
+            read_values = request.args.get('values').upper() == "TRUE"
+        except Exception as err:
+            read_values = False
         try:
             domain = request.args.get('domain')
             tr = TaskResult(name=domain)
@@ -119,17 +123,18 @@ class ProcessDomainResource(Resource):
                         
                         try:
                             with process5.read_file(s["name"]) as file:
-                                tmp,datasets = process5.get_file_annotations(file)
+                                tmp,datasets = process5.get_file_annotations(file,read_values)
                                 subdomain["annotation"].append(tmp) 
                                 subdomain["datasets"] = datasets
                                 pass
-                        except:
+                        except Exception as err:
+                            print(err)
                             pass                       
                         result["subdomains"].append(subdomain)
 
                 return  result,  200                
             else:
-                self.read_file(domain,result)
+                self.read_file(domain,result,read_values)
        
                 return  result,  200 
         except Exception as err:
@@ -268,6 +273,7 @@ class StudyRegistrationResource(ProcessDomainResource):
         super(StudyRegistrationResource).__init__()
         self.paths = ["investigation","provider","instrument","wavelength"]
         self.create_folders = True
+
         self.METADATA_FILE = "metadata.h5"
         
     def read_file(self,domain,result):

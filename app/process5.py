@@ -73,7 +73,8 @@ def read_file(domain=None):
     except IOError as err:
         raise err
 
-def get_file_annotations(file=None):
+def get_file_annotations(file=None,read_values=False):
+    
     annotation = {}
     datasets = []
     for key in file.keys():
@@ -85,9 +86,16 @@ def get_file_annotations(file=None):
             for item in file[key].attrs:
                 annotation[item]=file[key].attrs[item]  
         else:
-            datasets.append({"key" : key, "uuid" : file[key].id.uuid, "name" : file[key].name, 
-                                "shape" : file[key].shape, "size" : file[key].size})   
-    
+            _dataset = {"key" : key, "uuid" : file[key].id.uuid, "name" : file[key].name, 
+                                "shape" : file[key].shape, "size" : file[key].size}
+            if read_values:
+                _dataset["value"] = file[key][()].tolist()
+                _dataset["dims"] = []
+                for dim in file[key].dims:
+                    _dataset["dims"].append(dim.label)
+
+            datasets.append(_dataset)
+
     return annotation,datasets
 
 def check_folder(domain="/Round_Robin_1/",create=False):
