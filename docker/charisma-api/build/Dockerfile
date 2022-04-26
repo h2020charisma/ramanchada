@@ -17,10 +17,15 @@ RUN set -eux; \
         gcc \
         git \
         libc6-dev \
+        libpcre3-dev \
     ; \
     pip install uwsgi; \
     apt-mark auto '.*' > /dev/null; \
-    apt-mark manual $apt_mark_manual git; \
+    apt-mark manual \
+        $apt_mark_manual \
+        git \
+        libpcre3 \
+    ; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
     rm -rf /var/lib/apt/lists/*
         
