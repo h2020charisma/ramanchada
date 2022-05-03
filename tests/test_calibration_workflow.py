@@ -10,7 +10,7 @@ def test_calibration(file='test/calibration/NEON_GlacX785_BWTek_Probe_P0_850msx5
     # Set neon spectrum to pixel numbers
     Neon.reset_x()
     # Find peak positions of neon peaks
-    Neon.peaks(fitmethod='par', interval_width=0.5, show=False, prominence=.002, sort_by='position')
+    Neon.peaks(fitmethod='par', interval_width=0.5, show=False, prominence=.002, sort_by='position', smooth=True)
     # print(Neon.bands) tbd assert
     neon_x_axisWL = Neon.make_x_axis({
         2: 966.542,
