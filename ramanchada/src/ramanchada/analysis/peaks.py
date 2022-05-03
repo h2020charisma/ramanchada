@@ -25,10 +25,11 @@ def find_spectrum_peaks(x, y, prominence=.05, sg=11, sort_by='prominence',smooth
     # Filter + minmax normalization are important!
     if smooth:
         s = savgol_filter(y, sg, 2)
-        s -= s.min()
-        s /= s.max()
     else:
         s = y    
+
+    s -= s.min()
+    s /= s.max()
 
     integer_positions, props_dict = find_peaks(s,
         #height=.1,
