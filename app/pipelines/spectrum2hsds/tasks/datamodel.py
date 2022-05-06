@@ -5,9 +5,6 @@ import h5pyd
 from datetime import date
 upstream = []
 product = None
-hs_endpoint = None
-hs_username = None
-hs_password = None
 hsds_investigation = None
 config_input = None
 # -

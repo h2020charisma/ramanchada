@@ -36,9 +36,6 @@ tasks:
       data: "{{charisma_json}}"
       nb: products/datamodel.ipynb
     params:
-      hs_endpoint: "{{hs_endpoint}}"
-      hs_username: "{{hs_username}}"
-      hs_password: "{{hs_password}}"     
       hsds_investigation: "{{hsds_investigation}}"
       config_input: "{{config_input}}"
 

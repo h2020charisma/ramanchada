@@ -115,20 +115,25 @@ def folders2hsds(config_input,metadata_root,ramandb_api,hs_username,hs_password,
     with open(config_input, 'r') as infile:
         config = json.load(infile)
     for entry in config:
-        if entry["enabled"]:
-            hsds_provider = entry["hsds_provider"]
-            hsds_instrument = entry["hsds_instrument"]
-            hsds_wavelength = entry["hsds_wavelength"]
-            json_metadata = os.path.join(metadata_root,"metadata_{}_{}_{}.json".
-                format(hsds_provider,hsds_instrument,hsds_wavelength))
-            log_file = os.path.join(product["data"],"log_{}_{}_{}.json".
-                format(hsds_provider,hsds_instrument,hsds_wavelength))
-            with open(json_metadata, 'r') as infile:
-                metadata = json.load(infile)
-            if entry["delete"]:
-                delete_datasets(hsds_investigation,hsds_provider,hsds_instrument,
-                    hsds_wavelength)
-            files2hsds(metadata,ramandb_api,hs_username,hs_password,
-                    hsds_investigation,hsds_provider,hsds_instrument,
-                    hsds_wavelength,log_file,dry_run)
-    
+        try:
+            if entry["enabled"]:
+                hsds_provider = entry["hsds_provider"]
+                hsds_instrument = entry["hsds_instrument"]
+                hsds_wavelength = entry["hsds_wavelength"]
+                json_metadata = os.path.join(metadata_root,"metadata_{}_{}_{}.json".
+                    format(hsds_provider,hsds_instrument,hsds_wavelength))
+                log_file = os.path.join(product["data"],"log_{}_{}_{}.json".
+                    format(hsds_provider,hsds_instrument,hsds_wavelength))
+                with open(json_metadata, 'r') as infile:
+                    metadata = json.load(infile)
+                if entry["delete"]:
+                    try:
+                        delete_datasets(hsds_investigation,hsds_provider,hsds_instrument,
+                            hsds_wavelength)
+                    except Exception as err:
+                        print(err)
+                files2hsds(metadata,ramandb_api,hs_username,hs_password,
+                        hsds_investigation,hsds_provider,hsds_instrument,
+                        hsds_wavelength,log_file,dry_run)
+        except Exception as err:
+            print(err)

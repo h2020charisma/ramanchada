@@ -5,7 +5,7 @@ root_folder = None
 config_input = None
 # -
 
-from re import L
+
 import pandas as pd
 import os.path
 import json
