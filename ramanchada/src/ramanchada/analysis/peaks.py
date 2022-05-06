@@ -14,7 +14,7 @@ from scipy.special import voigt_profile
 from ramanchada.utilities import lims
 
 
-def find_spectrum_peaks(x, y, prominence=.05, sg=11, sort_by='prominence'):
+def find_spectrum_peaks(x, y, prominence=.05, sg=11, sort_by='prominence',smooth=False):
     """
     find_spectrum_peaks(x, y, prominence=.05, sg=11, x_min=25, x_max=10000, sort_by='prominence')
     Finds peaks and their FWHM and return in spectral units
@@ -23,9 +23,14 @@ def find_spectrum_peaks(x, y, prominence=.05, sg=11, sort_by='prominence'):
     #l = lims(x, x_min, x_max)
     #x, y = l(x), l(y)
     # Filter + minmax normalization are important!
-    s = savgol_filter(y, sg, 2)
+    if smooth:
+        s = savgol_filter(y, sg, 2)
+    else:
+        s = y    
+
     s -= s.min()
     s /= s.max()
+
     integer_positions, props_dict = find_peaks(s,
         #height=.1,
         height=.01,

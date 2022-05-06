@@ -145,5 +145,8 @@ cython_debug/
 /.vs/*
 /TestResults/*
 
+# Visual Studio Code files
+/.vscode/*
+
 # Windows thumbnail files
 Thumbs.db
