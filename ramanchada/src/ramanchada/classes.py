@@ -4,6 +4,7 @@
 
 # external imports
 from weakref import ref
+import h5py, h5pyd
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -745,7 +746,7 @@ class RamanChada(RamanSpectrum):
     Raman CHADA file with logging and saving to disc. Inherits from RamanSpectrum.
     """
     def __init__(self, source_path, raw=False,
-             x_label='Raman shift [rel. 1/cm]', y_label='counts [1]'):
+             x_label='Raman shift [rel. 1/cm]', y_label='counts [1]',is_h5pyd=False):
         """
         Parameters
         ----------
@@ -768,16 +769,24 @@ class RamanChada(RamanSpectrum):
         None.
 
         """
+        self.is_h5pyd = is_h5pyd
         # If file is not CHADA, create from native
-        if os.path.splitext(source_path)[1] != '.cha':
-            source_path = create_chada_from_native(source_path)
-        self.x, self.y, self.meta, self.x_label, self.y_label = read_chada(source_path, raw=raw)
+
+        if not is_h5pyd:
+            if os.path.splitext(source_path)[1] != '.cha':
+                source_path = create_chada_from_native(source_path,h5module=h5py)
+        self.x, self.y, self.meta, self.x_label, self.y_label = read_chada(source_path, raw=raw, h5module = self.h5module() )
         self.file_path = source_path
         # Initialize log
         self.log = []
         # Save original state
         self.x0, self.y0 = self.x.copy(), self.y.copy()
         self.time = time.ctime()
+        self.raw = raw
+        
+    def h5module(self):
+        return h5pyd if self.is_h5pyd else h5py;
+
     def show_log(self):
         """
         Shows the log.
@@ -831,7 +840,7 @@ class RamanChada(RamanSpectrum):
         None.
 
         """
-        commit_chada(self, commit_text)
+        commit_chada(self, commit_text, h5module = self.h5module() )
         # Initialize log
         self.log = []
 

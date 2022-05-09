@@ -39,3 +39,17 @@ def test_load_data_file_into_object():
     chada_file = get_chada_file()
     if chada_file.exists():
         os.remove(chada_file)
+
+
+def test_file_open_close():
+    native_file = get_native_file("Polystyrene.spc")
+    _ = RamanChada(native_file)
+
+    _ = RamanChada(native_file)
+
+
+'''
+def test_file_l6s():
+    native_file = get_native_file("PST10_iR785_OP02_8000msx8_01.l6s")
+    co1 = RamanChada(native_file)
+'''

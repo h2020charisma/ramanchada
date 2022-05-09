@@ -10,8 +10,10 @@ run-unit-tests:
         - asprunner
     script:
         - cd "$PROJECT_DIR"
-        - conda env update -f environment.yml
+        - conda install mamba -n base -c conda-forge
+        - mamba env update -f environment.yml
         - source activate ramanchada
-        - conda install flake8 pytest
+        - mamba install flake8 pytest
         - flake8 tests
-        - pytest
+        - pip install -e app
+        - pytest -k 'not postmetadata and not putmetadata'

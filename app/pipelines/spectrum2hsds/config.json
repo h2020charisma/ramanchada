@@ -1,0 +1,122 @@
+[
+    {
+        "folder_input": "FNMT-Madrid/BWTek_532nm/",
+        "file_metadata": "FNMT-Madrid/BWTek_532nm/FNMT-Madrid_iR532_IDEA.xlsx",
+        
+        "hsds_provider": "FNMT-Madrid",
+        "hsds_instrument": "BWTEK_iRaman",
+        "hsds_wavelength": 532,
+        "delete" : true,
+        "enabled" : false    
+    },
+    {
+        "folder_input": "FNMT-Madrid/Horiba_785nm/",
+        "file_metadata": "FNMT-Madrid/Horiba_785nm/FNMT-Madrid_iR785.xlsx",
+        
+        "hsds_provider": "FNMT-Madrid",
+        "hsds_instrument": "HORIBA_LabRam_IHR320",
+        "hsds_wavelength": 785,
+        "delete" : true,
+        "enabled" : false        
+    },
+    {
+        "folder_input": "NTUA/InViaReflex 785nm/",
+        "file_metadata": "NTUA/InViaReflex 785nm/NTUA_inViaReflex_785_IDEA.xlsx",
+        
+        "hsds_provider": "NTUA",
+        "hsds_instrument": "RENISHAW_inVia_Reflex",
+        "hsds_wavelength": 785,
+        "delete" : true,
+        "enabled" : false        
+    },    
+    {
+        "folder_input": "NTUA/InViaReflex 532nm/",
+        "file_metadata": "NTUA/InViaReflex 532nm/NTUA_inViaReflex_532.xlsx",
+        
+        "hsds_provider": "NTUA",
+        "hsds_instrument": "RENISHAW_inVia_Reflex",
+        "hsds_wavelength": 532,
+        "delete" : true,
+        "enabled" : false        
+    },    
+    {
+        "folder_input": "ICV-CSIC/Zolix/",
+        "file_metadata": "ICV-CSIC/Zolix/785 nm Zolix (updated)_IDEA.xlsx",
+        
+        "hsds_provider": "CSIC-ICV",
+        "hsds_instrument": "ZOLIX_Finder_edge",
+        "hsds_wavelength": 785,
+        "delete" : true,
+        "enabled" : true        
+    },    
+    {
+        "folder_input": "ICV-CSIC/Witec/",
+        "file_metadata": "ICV-CSIC/Witec/ICV_WITec_532_IDEA.xlsx",
+        
+        "hsds_provider": "CSIC-ICV",
+        "hsds_instrument": "WITEC_Alpha__300RA",
+        "hsds_wavelength": 532,
+        "delete" : true,
+        "enabled" : true        
+    },    
+    {
+        "folder_input": "ICV-CSIC/iRPlus/532 nm",
+        "file_metadata": "ICV-CSIC/iRPlus/532 nm/532 nm (updated).xlsx",
+        
+        "hsds_provider": "CSIC-ICV",
+        "hsds_instrument": "BWTEK_iRaman_plus",
+        "hsds_wavelength": 532,
+        "delete" : true,
+        "enabled" : true        
+    },    
+    {
+        "folder_input": "ICV-CSIC/iRPlus/785 nm",
+        "file_metadata": "ICV-CSIC/iRPlus/785 nm/785 nm (updated).xlsx",
+        
+        "hsds_provider": "CSIC-ICV",
+        "hsds_instrument": "BWTEK_iRaman_plus",
+        "hsds_wavelength": 785,
+        "delete" : true,
+        "enabled" : true        
+    },
+    {
+        "folder_input": "LBF/532 nm",
+        "file_metadata": "LBF/532 nm/LBF_WITecAlpha_532nm.xlsx",
+        
+        "hsds_provider": "FraunhoferLBF",
+        "hsds_instrument": "WITEC_Alpha_500",
+        "hsds_wavelength": 532,
+        "delete" : true,
+        "enabled" : true        
+    },    
+    {
+        "folder_input": "LBF",
+        "file_metadata": "LBF/Excel evaluation sheets/LBF_WITecAlpha_785nm.xlsx",
+        
+        "hsds_provider": "FraunhoferLBF",
+        "hsds_instrument": "WITEC_Alpha_500",
+        "hsds_wavelength": 785,
+        "delete" : true,
+        "enabled" : true        
+    },    
+    {
+        "folder_input": "ICP-CSIC",
+        "file_metadata": "ICP-CSIC/Renishaw_405nm/CSIC_Qontor_405_RP.xlsx",
+        
+        "hsds_provider": "CSIC-ICP",
+        "hsds_instrument": "RENISHAW_InVia_Qontor",
+        "hsds_wavelength": 405,
+        "delete" : true,
+        "enabled" : true        
+    },    
+    {
+        "folder_input": "ICP-CSIC",
+        "file_metadata": "ICP-CSIC/Renishaw_514nm/CSIC_Qontor_514-RP.xlsx",
+        
+        "hsds_provider": "CSIC-ICP",
+        "hsds_instrument": "RENISHAW_InVia_Qontor",
+        "hsds_wavelength": 514,
+        "delete" : true,
+        "enabled" : true        
+    }                  
+]

@@ -1,0 +1,41 @@
+tasks:
+  - source: tasks.metadata.read_metadata
+    product: 
+      data: products/metadata/
+#      nb: products/metadata.get.ipynb
+    params:
+      root_folder: "{{root_folder}}"
+      config_input: "{{config_input}}"    
+
+# tbd task to create provider/instrument/wavelength ; if not existing the submit will fail
+
+  - source: tasks.api.folders2hsds
+    product: 
+      data: products/logs/
+  #    nb: products/metadata.get.ipynb
+    params:
+      config_input: "{{config_input}}"
+      metadata_root: "products/metadata/"
+      ramandb_api: "{{ramandb_api}}"
+      hs_username: "{{hs_username}}"
+      hs_password: "{{hs_password}}"
+      hsds_investigation: "{{hsds_investigation}}"
+      dry_run: "{{dry_run}}"
+
+  - source: tasks/process.py
+    product: 
+      data: products/peaks/
+      nb: products/process.ipynb
+    params:   
+      hsds_investigation: "{{hsds_investigation}}"
+      config_input: "{{config_input}}"
+      dry_run: "{{dry_run}}"      
+
+  - source: tasks/datamodel.py
+    product: 
+      data: "{{charisma_json}}"
+      nb: products/datamodel.ipynb
+    params:
+      hsds_investigation: "{{hsds_investigation}}"
+      config_input: "{{config_input}}"
+
