@@ -26,7 +26,7 @@ def find_spectrum_peaks(x, y, prominence=.05, sg=11, sort_by='prominence',smooth
     if smooth:
         s = savgol_filter(y, sg, 2)
     else:
-        s = y    
+        s = y
 
     s -= s.min()
     s /= s.max()
@@ -80,7 +80,7 @@ def spectrum_peak_widths(x, y, pos_in_x_units, rel_height=0.5):
     # Translate back to x_units
     units_per_channel = np.mean(np.diff(x))
     return w*units_per_channel
-    
+
 def fit_spectrum_peaks_pos(x, y, pos_in_x_units, method, interval_width=2, show=False):
     """
     x_fit_pos, x_fit_width = fit_spectrum_peaks_pos(x, y, pos_in_x_units, method, show=False)
@@ -91,11 +91,11 @@ def fit_spectrum_peaks_pos(x, y, pos_in_x_units, method, interval_width=2, show=
     pos_in_x_units = [p for p in pos_in_x_units if p>x.min() if p<x.max()]
     widths_in_x_units = spectrum_peak_widths(x, y, pos_in_x_units, rel_height=.5)
     # 2x 1/e**2 is 1.699 x FWHM
-    widths_in_x_units = np.array([max(w,10) for w in widths_in_x_units])      
+    widths_in_x_units = np.array([max(w,10) for w in widths_in_x_units])
     half_peak_widths = 1.699/2*widths_in_x_units
     x_fit_pos, x_fit_width, x_fit_area = [], [], []
-    x_fit_pos_error, x_fit_width_error, x_fit_area_error = [], [], []
-    methods = {'voigt': voigt_fit, 'lorentz': lorentz_fit, 'pearson': pearson4_fit, 
+    x_fit_abs_error, x_fit_pos_error, x_fit_width_error, x_fit_area_error = [], [], [], []
+    methods = {'voigt': voigt_fit, 'lorentz': lorentz_fit, 'pearson': pearson4_fit,
         'beta': beta_profile_fit, 'par': parabola_fit, 'gl': gauss_lorentz_fit, 'dvoigt': double_voigt_fit}
     for p, w in zip(pos_in_x_units, half_peak_widths):
         l = lims(x, p-interval_width*w, p+interval_width*w)
@@ -106,13 +106,14 @@ def fit_spectrum_peaks_pos(x, y, pos_in_x_units, method, interval_width=2, show=
         x_fit_area.append(area)
         # Most fit models yield errors (but some don't)
         if len(fit_results) > 3:
-            pos_error, width_error, area_error = fit_results[3:6]
+            abs_error, pos_error, width_error, area_error = fit_results[3:7]
         else:
-            pos_error, width_error, area_error = np.nan, np.nan, np.nan
+            abs_error, pos_error, width_error, area_error = np.nan, np.nan, np.nan, np.nan
+        x_fit_abs_error.append(abs_error)
         x_fit_pos_error.append(pos_error)
         x_fit_width_error.append(width_error)
         x_fit_area_error.append(area_error)
-    return np.array(x_fit_pos), np.array(x_fit_width), np.array(x_fit_area),\
+    return np.array(x_fit_pos), np.array(x_fit_width), np.array(x_fit_area), np.array(x_fit_abs_error),\
         np.array(x_fit_pos_error), np.array(x_fit_width_error), np.array(x_fit_area_error)
 
 def voigt_fit(x, y, show=False):
@@ -148,7 +149,7 @@ def voigt_fit(x, y, show=False):
     except RuntimeError:
         return np.nan, np.nan, np.nan
     #return fitpos, width, area
-    return *get_function_properties(x, voigt, pars),\
+    return *get_function_properties(x, voigt, pars), error,\
         *compute_function_prop_errors(x, voigt, pars, pcov)
 
 def lorentz_fit(x, y, show=False):
@@ -179,7 +180,7 @@ def lorentz_fit(x, y, show=False):
     except RuntimeError:
         return np.nan, np.nan, np.nan
     #return fitpos, width, area
-    return *get_function_properties(x, lorentz, pars),\
+    return *get_function_properties(x, lorentz, pars), error,\
         *compute_function_prop_errors(x, lorentz, pars, pcov)
 
 def pearson4_fit(x, y, show=False):
@@ -214,7 +215,7 @@ def pearson4_fit(x, y, show=False):
     except RuntimeError:
         return np.nan, np.nan, np.nan
     #return fitpos, width, area
-    return *get_function_properties(x, pearson4, pars),\
+    return *get_function_properties(x, pearson4, pars), error,\
         *compute_function_prop_errors(x, pearson4, pars, pcov)
 
 def beta_profile_fit(x, y, show=False):
@@ -246,7 +247,7 @@ def beta_profile_fit(x, y, show=False):
     except RuntimeError:
         return np.nan, np.nan, np.nan
     #return fitpos, width, area
-    return *get_function_properties(x, beta_profile, pars),\
+    return *get_function_properties(x, beta_profile, pars), error,\
         *compute_function_prop_errors(x, beta_profile, pars, pcov)
 
 def double_voigt_fit(x, y, show=False):
@@ -282,7 +283,7 @@ def double_voigt_fit(x, y, show=False):
     except RuntimeError:
         return np.nan, np.nan, np.nan
     #return fitpos, width, area
-    return *get_function_properties(x, double_voigt, pars),\
+    return *get_function_properties(x, double_voigt, pars), error,\
         *compute_function_prop_errors(x, double_voigt, pars, pcov)
 
 def gauss_lorentz_fit(x, y, show=False):
@@ -319,12 +320,12 @@ def gauss_lorentz_fit(x, y, show=False):
     except RuntimeError:
         return np.nan, np.nan, np.nan
     #return fitpos, width, area
-    return *get_function_properties(x, gauss_lorentz, pars),\
+    return *get_function_properties(x, gauss_lorentz, pars), error,\
         *compute_function_prop_errors(x, gauss_lorentz, pars, pcov)
 
 def parabola_fit(x, y, show=False):
     """
-    fitpos, width, area =  
+    fitpos, width, area =
     Interpolates the counts to pad (~1000) x values, then fits a parabola to the central 10%.
     The interpolate is equivalent to padding in Fourier Space, and probably superflous.
     The width and area are geometrically estimated from the interpolated function using peak_widths.
@@ -376,7 +377,7 @@ def get_function_properties(x, function, pars):
     return peak_pos, width, area
 
 def compute_function_prop_errors(x, function, pars, covariance_matrix):
-    # Compute one standard deviation errors on the parameters 
+    # Compute one standard deviation errors on the parameters
     perr = np.sqrt(np.diag(covariance_matrix))
     # Compute gradient
     squared_sum_of_errors = 0
@@ -429,4 +430,4 @@ def double_voigt(x, y0, amp1, cen1, sigma1, gamma1, amp2, cen2, sigma2, gamma2):
 
 def gauss_lorentz(x, y0, ampG1, cenG1, sigmaG1, ampL1, cenL1, widL1):
     return y0 + gauss(x, y0, ampG1, cenG1, sigmaG1) + lorentz(x, y0, ampL1, cenL1, widL1)
-              
+
