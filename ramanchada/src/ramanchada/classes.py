@@ -26,7 +26,7 @@ from ramanchada.utilities import hqi, lims, interpolation_within_bounds, labels_
 from ramanchada.calibration.calibration import raman_x_calibration, raman_x_calibration_from_spectrum, raman_y_calibration_from_spectrum,\
     deconvolve_mtf, relative_ctf, apply_relative_ctf, raman_mtf_from_psfs, extract_xrays, construct_calibration
 
-    
+
 class Curve:
     """
     Basic Data class with designated x and y columns. Can be spectra, distributions, chromatograms, ...
@@ -37,12 +37,12 @@ class Curve:
         ----------
         data : pandas DataFrame
             >Data is imported as a DataFrame. This can come from common data formats such as csv or Excel.
-            
+
         x_column_name : str
             >Name of the column holding the x data.
-            
+
         y_column_name : str
-            >Name of the column holding the y data.  
+            >Name of the column holding the y data.
 
         Returns
         -------
@@ -80,17 +80,17 @@ class Curve:
         Parameters
         ----------
         method : str, optional
-            > Normalization method as described in *Ryabchykov, O., Guo, S., & Bocklitz, T. (2019). Analyzing Raman spectroscopic data. Physical Sciences Reviews, 4(2), 1–16. https://doi.org/10.1515/psr-2017-0043.*  
-            - 'snv': standard normal variate - subtract mean, divide by standard deviation  
-            - 'vector': vector normalization  - subtract 0, divide by vector norm   
-            - 'minmax': min-max scaling - subtract minimun, divide by maximum  
-            - 'area': integrated intensity scaling - subtract minimun, divide by mean  
-            The default is 'snv'.  
-            
+            > Normalization method as described in *Ryabchykov, O., Guo, S., & Bocklitz, T. (2019). Analyzing Raman spectroscopic data. Physical Sciences Reviews, 4(2), 1–16. https://doi.org/10.1515/psr-2017-0043.*
+            - 'snv': standard normal variate - subtract mean, divide by standard deviation
+            - 'vector': vector normalization  - subtract 0, divide by vector norm
+            - 'minmax': min-max scaling - subtract minimun, divide by maximum
+            - 'area': integrated intensity scaling - subtract minimun, divide by mean
+            The default is 'snv'.
+
         x_min : double, optional
             > Lower x boundary of interval where constants are determined from. The default is -1e9.
-            
-        x_max : double, optional. 
+
+        x_max : double, optional.
             > Upper x boundary of interval where constants are determined from. The default is 1e9.
 
         Returns
@@ -117,17 +117,17 @@ class Curve:
             > Smoothing method. Can be one of the following:
 
         **- 'sg': Savitzky-Golay filter** - see scipy.signal.savgol_filter
-        
+
         **kwargs
 
         window_length : int, optional
         > Window Length for Savitzky-Golay filter. The default is 11.
-        
+
         polyorder : int, optional
         > Polynomial order for Savitzky-Golay filter. The default is 3.
 
         **- 'wiener': Wien filter** - see scipy.signal.wiener
-        
+
         **kwargs
 
         mysize : int or array_like, optional
@@ -137,7 +137,7 @@ class Curve:
         > The noise-power to use. If None, then noise is estimated as the average of the local variance of the input.
 
         **- 'median': median filter** - see scipy.signal.medfilt
-        
+
         **kwargs
 
         kernel_size : array_like, optional
@@ -149,21 +149,21 @@ class Curve:
         > Standard deviation for Gaussian kernel
 
         **- 'lowess': Locally Weighted Scatterplot Smoothing (LOWESS)** - see statsmodels.nonparametric.smoothers_lowess.lowess
-        
+
         **kwargs
 
         span : float
         > Width of interval (in channels) to use for estimating each y-value.
 
         **- 'boxcar': filter by rectangular window or Dirichlet window**
-        
+
         **kwargs
 
         box_pts : int
         > Number of points in the output window. If zero or less, an empty array is returned.
 
         The default is 'sg'.
-            
+
         Returns
         -------
         None.
@@ -181,7 +181,7 @@ class Curve:
         ----------
         x_min : double
             > Lower x boundary of interval in x units
-            
+
         x_max : double
             > Upper x boundary of interval in x units.
 
@@ -198,7 +198,7 @@ class Curve:
     def to_excel(self, filepath):
         DF = pd.DataFrame( {self.x_label: self.x, self.y_label: self.y} )
         DF.to_excel(filepath)
-    
+
 class Spectrum(Curve):
     """
     A curve with peaks that can be located and analyzed.
@@ -212,16 +212,16 @@ class Spectrum(Curve):
         ----------
         data : pandas DataFrame
             > Data is imported as a DataFrame. This can come from common data formats such as csv or Excel.
-            
+
         x_column_name : str
             > Name of the column holding the x data.
-            
+
         y_column_name : str
             > Name of the column holding the y data.
-            
+
         x_label : str, optional
             > Label for x data. The default is 'spectral index'.
-            
+
         y_label : TYPE, optional
             > Label for y data The default is 'intensity [a.u.]'.
 
@@ -232,7 +232,7 @@ class Spectrum(Curve):
         """
         super().__init__(data, x_column_name, y_column_name)
         self.x_label, self.y_label = x_label, y_label
-        
+
     @change_y
     @log
     def invert(self):
@@ -256,26 +256,26 @@ class Spectrum(Curve):
         ----------
         x_min : double, optional
             > Lower x boundary of search interval in x units. The default is -1e9.
-            
+
         x_max : double, optional
             > Upper x boundary of search interval in x units. The default is 1e9.
-            
+
         fit : bool, optional
             > True if peak parameters should be determined by fitting an analytical model. The default is True.
-            
+
         fitmethod : str, optional
-            > Model to fit to each peak.   
-            - 'par': parabola  
-            - 'voigt': Voigt distribution  
-            - 'vg': Sum of independent Gauss + Voigt model  
+            > Model to fit to each peak.
+            - 'par': parabola
+            - 'voigt': Voigt distribution
+            - 'vg': Sum of independent Gauss + Voigt model
             The default is 'voigt'.
-            
+
         interval_width : double, optional
             > The interval width, in FWHMs, on which each peak is fitted. The default is 2.
-            
+
         sort_by : str, optional
             > The column after which peaks are sorted in the .bands attribute. The default is 'prominence'.
-            
+
         show : bool, optional
             > True if fits should be plotted with the data for each peak. The default is False.
 
@@ -291,12 +291,13 @@ class Spectrum(Curve):
         else:
             self.bands = find_spectrum_peaks(x, y, prominence=prominence, sort_by=sort_by,smooth=smooth)
         if fit:
-            positions, widths, areas, positions_error, widths_error, areas_error = \
+            positions, widths, areas, abs_error, positions_error, widths_error, areas_error = \
                 fit_spectrum_peaks_pos(x, y, self.bands['position'], method = fitmethod,\
                     interval_width=interval_width, show=show)
             self.bands[fitmethod + ' fitted position'] = positions
             self.bands[fitmethod + ' fitted FWHM'] = widths
             self.bands[fitmethod + ' fitted area'] = areas
+            self.bands[fitmethod + ' abs error'] = abs_error
             self.bands[fitmethod + ' position error'] = positions_error
             self.bands[fitmethod + ' FWHM error'] = widths_error
             self.bands[fitmethod + ' area error'] = areas_error
@@ -316,23 +317,23 @@ class Spectrum(Curve):
         Parameters
         ----------
         method : str, optional
-            > Model fitting method as described in  
-            *Ryabchykov, O., Guo, S., & Bocklitz, T. (2019). Analyzing Raman spectroscopic data. Physical Sciences Reviews, 4(2), 1–16. https://doi.org/10.1515/psr-2017-0043.*  
-            - 'als': Asymmetric least squares.  
-            After *He, S., Zhang, W., Liu, L., Huang, Y., He, J., Xie, W., … P. W.-A., & 2014,  undefined. (n.d.). Baseline correction for Raman spectra using an improved asymmetric least squares method. Pubs.Rsc.Org.*  
-            - 'snip': statistics-sensitive non-linear iterative peak clipping.  
-            After *Caccia, M., Ebolese, A., Maspero, M., Santoro, R., Tecnologia, A., Locatelli, M., Pieracci, M., Tintori, C., & Caen, S. A. (n.d.). Background removal procedure based on the SNIP algorithm for γ − ray spectroscopy with the CAEN Educational Kit. CAEN Tools for Discovery Educational Note ED3163, 1–4.*    
+            > Model fitting method as described in
+            *Ryabchykov, O., Guo, S., & Bocklitz, T. (2019). Analyzing Raman spectroscopic data. Physical Sciences Reviews, 4(2), 1–16. https://doi.org/10.1515/psr-2017-0043.*
+            - 'als': Asymmetric least squares.
+            After *He, S., Zhang, W., Liu, L., Huang, Y., He, J., Xie, W., … P. W.-A., & 2014,  undefined. (n.d.). Baseline correction for Raman spectra using an improved asymmetric least squares method. Pubs.Rsc.Org.*
+            - 'snip': statistics-sensitive non-linear iterative peak clipping.
+            After *Caccia, M., Ebolese, A., Maspero, M., Santoro, R., Tecnologia, A., Locatelli, M., Pieracci, M., Tintori, C., & Caen, S. A. (n.d.). Background removal procedure based on the SNIP algorithm for γ − ray spectroscopy with the CAEN Educational Kit. CAEN Tools for Discovery Educational Note ED3163, 1–4.*
             The default is 'als'.
-            
+
         lam : double, optional
             > lambda parameter for ALS. The default is 1e5.
-            
+
         p : double, optional
             > p parameter for ALS. The default is 0.001.
-            
+
         niter : int, optional
             > Number of iterations. The default is 100.
-            
+
         smooth : int, optional
             > Kernel length for Wien filtering prior to ALS baseline fitting. The default is 7.
 
@@ -354,23 +355,23 @@ class Spectrum(Curve):
         Parameters
         ----------
         method : str, optional
-            > Model fitting method as described in  
-            *Ryabchykov, O., Guo, S., & Bocklitz, T. (2019). Analyzing Raman spectroscopic data. Physical Sciences Reviews, 4(2), 1–16. https://doi.org/10.1515/psr-2017-0043.*  
-            - 'als': Asymmetric least squares.  
-            After *He, S., Zhang, W., Liu, L., Huang, Y., He, J., Xie, W., … P. W.-A., & 2014,  undefined. (n.d.). Baseline correction for Raman spectra using an improved asymmetric least squares method. Pubs.Rsc.Org.*  
-            - 'snip': statistics-sensitive non-linear iterative peak clipping.  
-            After *Caccia, M., Ebolese, A., Maspero, M., Santoro, R., Tecnologia, A., Locatelli, M., Pieracci, M., Tintori, C., & Caen, S. A. (n.d.). Background removal procedure based on the SNIP algorithm for γ − ray spectroscopy with the CAEN Educational Kit. CAEN Tools for Discovery Educational Note ED3163, 1–4.*    
+            > Model fitting method as described in
+            *Ryabchykov, O., Guo, S., & Bocklitz, T. (2019). Analyzing Raman spectroscopic data. Physical Sciences Reviews, 4(2), 1–16. https://doi.org/10.1515/psr-2017-0043.*
+            - 'als': Asymmetric least squares.
+            After *He, S., Zhang, W., Liu, L., Huang, Y., He, J., Xie, W., … P. W.-A., & 2014,  undefined. (n.d.). Baseline correction for Raman spectra using an improved asymmetric least squares method. Pubs.Rsc.Org.*
+            - 'snip': statistics-sensitive non-linear iterative peak clipping.
+            After *Caccia, M., Ebolese, A., Maspero, M., Santoro, R., Tecnologia, A., Locatelli, M., Pieracci, M., Tintori, C., & Caen, S. A. (n.d.). Background removal procedure based on the SNIP algorithm for γ − ray spectroscopy with the CAEN Educational Kit. CAEN Tools for Discovery Educational Note ED3163, 1–4.*
             The default is 'als'.
-            
+
         lam : double, optional
             > lambda parameter for ALS. The default is 1e5.
-            
+
         p : double, optional
             > p parameter for ALS. The default is 0.001.
-            
+
         niter : int, optional
             > Number of iterations. The default is 100.
-            
+
         smooth : int, optional
             > Kernel length for Wien filtering prior to ALS baseline fitting. The default is 7.
 
@@ -381,7 +382,7 @@ class Spectrum(Curve):
         """
         self.fit_baseline(method='als', lam=1e5, p=0.001, niter=100, smooth=7)
         self.y -= self.baseline
-            
+
     @change_x
     @log
     def interpolate_x(self, reference_spectrum=[]):
@@ -409,7 +410,7 @@ class Spectrum(Curve):
         self.x = x.copy()
     def hqi(self, reference_spectrum):
         """
-        Calculates the Hit Quality Index after *Rodriguez, J. D., Westenberger, B. J., Buhse, L. F., & Kauffman, J. F. (2011b). Standardization of Raman spectra for transfer of spectral libraries across different instruments. Analyst, 136(20), 4232–4240. https://doi.org/10.1039/c1an15636e*  
+        Calculates the Hit Quality Index after *Rodriguez, J. D., Westenberger, B. J., Buhse, L. F., & Kauffman, J. F. (2011b). Standardization of Raman spectra for transfer of spectral libraries across different instruments. Analyst, 136(20), 4232–4240. https://doi.org/10.1039/c1an15636e*
 
         Parameters
         ----------
@@ -449,17 +450,17 @@ class RamanSpectrum(Spectrum):
         ----------
         data : pandas DataFrame
             > Data is imported as a DataFrame. This can come from common data formats such as csv or Excel.
-            
+
         x_column_name : str
             > Name of the column holding the x data.
-            
+
         y_column_name : str
             > Name of the column holding the y data.
-            
-            
+
+
             #      x_label : str, optional
             > Label for x data. The default is 'spectral index'.
-            
+
         y_label : TYPE, optional
             > Label for y data The default is 'intensity [a.u.]'.
 
@@ -542,12 +543,12 @@ class RamanSpectrum(Spectrum):
             > Reference for calibration.
             If RamanSpectrum, the reference must be a spectrum recorded using the same sample, and calibrated.
             If list, the reference must be a list of exact peak positions.
-            
+
         fitmethod : str, optional
-            > Model to fit to each peak of Target and Reference  
-            - 'par': parabola  
-            - 'voigt': Voigt distribution  
-            - 'vg': Sum of independent Gauss + Voigt model  
+            > Model to fit to each peak of Target and Reference
+            - 'par': parabola
+            - 'voigt': Voigt distribution
+            - 'vg': Sum of independent Gauss + Voigt model
             The default is 'voigt'.
 
         peak_pos : list, optional
@@ -602,10 +603,10 @@ class RamanSpectrum(Spectrum):
         ----------
         reference : RamanSpectrum
             > The reference must be a spectrum recorded using the same sample, and calibrated in x and y.
-            
+
         x_min : double
             > Lower x boundary of calibration interval in x units
-            
+
         x_max : double
             > Upper x boundary of calibration interval in x units.
 
@@ -626,7 +627,7 @@ class RamanSpectrum(Spectrum):
         ----------
         mtf : RamanMTF
             > MTF object containing the MTF model in Fourier space.
-            
+
         gauss_filter_sigma : double, optional
             > Sigma of a Gauss filter applied after deconvolution to reduce excessive noise. The default is 1.
 
@@ -728,7 +729,7 @@ class RamanSpectrum(Spectrum):
         -------
         snr : double
             > Approximation for SNR.
-        
+
         """
         return snr(self.y)
     @change_x
@@ -740,7 +741,7 @@ class RamanSpectrum(Spectrum):
         # The data will have to be flipped in general
         self.y = np.flip(self.y)
         self.x_label = 'Raman shift [rel. 1/cm]'
-        
+
 class RamanChada(RamanSpectrum):
     """
     Raman CHADA file with logging and saving to disc. Inherits from RamanSpectrum.
@@ -754,13 +755,13 @@ class RamanChada(RamanSpectrum):
             > Path to spectrum data file that is to be read.
             If extension is .cha, an existing CHADA file will be opened.
             If not, a native data file is imported and a CHADA file with the same name generated in the same directory.
-            
+
         commit : str, optional
             > If specified, the data of the specific commit is loaded rather than the most recent. The default is [].
-            
+
         x_label : str, optional
             > See RamanSpectrum. The default is 'Raman shift [rel. 1/cm]'.
-            
+
         y_label : str, optional
             > See RamanSpectrum. The default is 'counts [1]'.
 
@@ -783,7 +784,7 @@ class RamanChada(RamanSpectrum):
         self.x0, self.y0 = self.x.copy(), self.y.copy()
         self.time = time.ctime()
         self.raw = raw
-        
+
     def h5module(self):
         return h5pyd if self.is_h5pyd else h5py;
 
@@ -861,7 +862,7 @@ def make_test_RamanChada():
     filename = os.path.join(dir, "testdata", "200218-17.wdf")
     return RamanChada(filename)
 
-    
+
 class SpectrumGroup:
     """
     Group of spectra for comparison and multivariate analysis
@@ -959,17 +960,17 @@ class SpectrumGroup:
         """
         Applies a specified method to separately to each spectrum in the group.
         Example:
-            
+
             G.process('x_crop', 500, 1800)
 
         Parameters
         ----------
         method : str
             > Name of method to be applied
-            
+
         *args
             > Non-keyword agruments for method. Refer to method documentation.
-            
+
         **kwargs : TYPE
             > Keyword agruments for method. Refer to method documentation.
 
@@ -1020,9 +1021,9 @@ class SpectrumGroup:
         ----------
         fitmethod : str
             > Name of peak fit model to be applied
-            
+
         interval_width : int
-            > Interval in multiples of FWHM around the peak to be used for peak fitting.  
+            > Interval in multiples of FWHM around the peak to be used for peak fitting.
 
         Returns
         -------
@@ -1061,9 +1062,9 @@ class RamanGroup():
         spectra : list of *RamanChada* or *RamanSpectrum* objects
             > Spectra to be included upon initialization.
             Example:
-            
+
                 G = RamanGroup( [s1, s2, s3] )
-            
+
         interpolate : bool
             > If True, Raman shifts are interpolated to increments of 1 1/cm.
             If False, all x axes will be interpolated to the x axis of the first spectrum added.
@@ -1080,7 +1081,7 @@ class RamanGroup():
         self.data = pd.DataFrame(S)
         if len(spectra) > 1:
             self.add(spectra[1:])
-            
+
     def add_one(self, spectrum, use_new_x=False):
         """
         Adds a single spectrum.
@@ -1089,9 +1090,9 @@ class RamanGroup():
         spectrum : *RamanChada* or *RamanSpectrum* object
             > Spectrum to be added.
             Example:
-            
+
                 G.add_one(s4)
-            
+
         use_new_x : bool
             > If True, the existing x axes will be interpolated to the newly added spectrum.
             If False, the x axis will be interpolated on the existing x axes. The default is False.
@@ -1111,7 +1112,7 @@ class RamanGroup():
             new_index = self.data.T.index
         merged = merged.interpolate('quadratic').reindex(new_index).fillna(0)
         self.data = merged.T
-    
+
     def add(self, spectra):
         """
         Adds a list of spectra.
@@ -1120,15 +1121,15 @@ class RamanGroup():
         spectra : list of *RamanChada* or *RamanSpectrum* objects
             > Spectra to be added.
             Example:
-            
+
                 G.add( [s5, s6] )
-            
+
         Returns
         -------
         None.
         """
         [ self.add_one(s) for s in spectra ]
-        
+
     def set_targets(self, target_dict):
         """
         Adds targets for plottting prediction model training.
@@ -1142,13 +1143,13 @@ class RamanGroup():
             Target values can be strings (for classification) or numbers (for regression).
             The targets are stored in *RamanGroup.targets*, a *DataFrame*.
             Note that multiple targets can be added.
-            
+
         Returns
         -------
         None.
         """
         self.targets = pd.DataFrame(index=self.data.index, data=target_dict)
-        
+
     def extract(self, no_of_spectrum):
         """
         Returns a specified single spectrum from the *RamanGroup*.
@@ -1156,7 +1157,7 @@ class RamanGroup():
         ----------
         no_of_spectrum : int
             > Index of the spectrum to be extracted.
-            
+
         Returns
         -------
         RamanChada
@@ -1170,14 +1171,14 @@ class RamanGroup():
         Parameters
         ----------
         None.
-            
+
         Returns
         -------
         RamanGroup
             > Exact copy of *self*.
         """
         return deepcopy(self)
-    
+
     def process(self, method, *args, **kwargs):
         """
         Applies a single pre-processing step to a *RamanGroup*.
@@ -1187,19 +1188,19 @@ class RamanGroup():
         method : str
             > Name of *RamanChada* method to be applied.
             For details, refer to *ramanchada.RamanChada*.
-            
+
         *args : str of number
             > Non-keyword parameters for method
 
         **kwargs
-            > Keyword parameters for method   
+            > Keyword parameters for method
 
         Returns
         -------
         None.
         """
         self.data = process_DF(self.data, method, *args, **kwargs)
-        
+
     @property
     def x(self):
         """
@@ -1207,7 +1208,7 @@ class RamanGroup():
             > Common x axis of *RamanGroup* as 1D array
         """
         return np.array(self.data.columns)
-    
+
     @property
     def y(self):
         """
@@ -1215,7 +1216,7 @@ class RamanGroup():
             > Y values of *RamanGroup* as array with dimensions [n_spectra, n_channels]
         """
         return self.data.to_numpy()
-        
+
     def __repr__(self):
         info = f'{self.__class__.__name__} containing {len(self.data)} spectra.'
         if hasattr(self, 'targets'):
@@ -1224,7 +1225,7 @@ class RamanGroup():
 
     def plot(self, target=None, xrange = [1e-9, 1e9], legend=False):
         """
-        Plots spectra of a *RamanGroup* in a single axis. 
+        Plots spectra of a *RamanGroup* in a single axis.
         Parameters
         ----------
         target : str
@@ -1238,7 +1239,7 @@ class RamanGroup():
             > x interval to be plotted. The default is [1e-9, 1e9] (all).
 
         legend : bool
-            > If True, a legend will be shown. The default is False. 
+            > If True, a legend will be shown. The default is False.
 
         Returns
         -------
@@ -1268,10 +1269,10 @@ class RamanCalibration(Curve):
         ----------
         data : DataFrame
             > DataFrame with two columns, the first containing the x positions and the second containing the shifts at these positions.
-            
+
         poly_degree : int, optional
             > Degree of polynomial model fitted to the data points. The default is 3.
-            
+
         interpolate : bool, optional
             > If True, values of the polynomial model which are outside of the data range used for calibration are interpolated.
             If False, all shifts outside the data range are set to the boundary values.
@@ -1354,7 +1355,7 @@ def spectrum_to_frame(spectrum):
     ----------
     spectrum : Spectrum, RamanSpectrum or RamanChada
         > Spectrum to be converted
-    
+
     Returns
     -------
     DataFrame
@@ -1378,7 +1379,7 @@ def spectrum_to_series(spectrum):
     ----------
     spectrum : Spectrum, RamanSpectrum or RamanChada
         > Spectrum to be converted
-    
+
     Returns
     -------
     pandas.Series
@@ -1396,10 +1397,10 @@ def line_to_spectrum(DF, no_line):
     ----------
     DF : DataFrame
         > *pandas.DataFrame* structured as described in *ramanchada.classes.RamanGroup*
-    
+
     no_line : int
-        > Row index to be converted 
-    
+        > Row index to be converted
+
     Returns
     -------
     ramanchada.classes.Spectrum
@@ -1418,12 +1419,12 @@ def process_DF(DF, method, *args, **kwargs):
     method : str
         > Name of *RamanChada* method to be applied.
         For details, refer to *ramanchada.classes.RamanChada*.
-        
+
     *args : str of number
         > Non-keyword parameters for method
 
     **kwargs
-        > Keyword parameters for method   
+        > Keyword parameters for method
 
     Returns
     -------
