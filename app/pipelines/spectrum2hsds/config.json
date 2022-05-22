@@ -47,7 +47,7 @@
         "hsds_instrument": "ZOLIX_Finder_edge",
         "hsds_wavelength": 785,
         "delete" : true,
-        "enabled" : true        
+        "enabled" : false        
     },    
     {
         "folder_input": "ICV-CSIC/Witec/",
@@ -57,7 +57,7 @@
         "hsds_instrument": "WITEC_Alpha__300RA",
         "hsds_wavelength": 532,
         "delete" : true,
-        "enabled" : true        
+        "enabled" : false        
     },    
     {
         "folder_input": "ICV-CSIC/iRPlus/532 nm",
@@ -67,7 +67,7 @@
         "hsds_instrument": "BWTEK_iRaman_plus",
         "hsds_wavelength": 532,
         "delete" : true,
-        "enabled" : true        
+        "enabled" : false        
     },    
     {
         "folder_input": "ICV-CSIC/iRPlus/785 nm",
@@ -77,7 +77,7 @@
         "hsds_instrument": "BWTEK_iRaman_plus",
         "hsds_wavelength": 785,
         "delete" : true,
-        "enabled" : true        
+        "enabled" : false        
     },
     {
         "folder_input": "LBF/532 nm",
@@ -87,7 +87,7 @@
         "hsds_instrument": "WITEC_Alpha_500",
         "hsds_wavelength": 532,
         "delete" : true,
-        "enabled" : true        
+        "enabled" : false        
     },    
     {
         "folder_input": "LBF",
@@ -97,7 +97,7 @@
         "hsds_instrument": "WITEC_Alpha_500",
         "hsds_wavelength": 785,
         "delete" : true,
-        "enabled" : true        
+        "enabled" : false        
     },    
     {
         "folder_input": "ICP-CSIC",
@@ -107,7 +107,7 @@
         "hsds_instrument": "RENISHAW_InVia_Qontor",
         "hsds_wavelength": 405,
         "delete" : true,
-        "enabled" : true        
+        "enabled" : false        
     },    
     {
         "folder_input": "ICP-CSIC",

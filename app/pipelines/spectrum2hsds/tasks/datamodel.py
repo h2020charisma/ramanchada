@@ -7,6 +7,7 @@ upstream = []
 product = None
 hsds_investigation = None
 config_input = None
+index_enabled_only = None
 # -
 
 
@@ -16,6 +17,7 @@ def prefixed_uuid(value, prefix="CRMA"):
 
 class StudyRaman:
     def __init__(self, investigation, provider, parameters, filename):
+        self.tags_params = ["instrument_s","wavelength_s" ]
         self.topcategory = "P-CHEM"
         self.endpointcategory = "ANALYTICAL_METHODS_SECTION"
         self.investigation = investigation
@@ -23,6 +25,10 @@ class StudyRaman:
         self.provider = provider
         self.parameters = parameters
         self.filename = filename
+
+
+    def document_uuid(self,id,params):
+        return prefixed_uuid("{} {} {} {}".format(self.investigation,self.provider,self.method,params))
 
     def to_solr_json(self):
         _solr = {}
@@ -32,7 +38,7 @@ class StudyRaman:
         _solr["assay_uuid_s"] = prefixed_uuid(self.investigation)
 
         _solr["type_s"] = "study"
-        _solr["document_uuid_s"] = id
+
 
         _solr["topcategory_s"] = self.topcategory
         _solr["endpointcategory_s"] = self.endpointcategory
@@ -49,14 +55,37 @@ class StudyRaman:
         _solr["updated_s"] = date.today().strftime("%Y-%m-%d")
         _solr["E.method_s"] = self.method
 
-        _params = self.parameters
-        _params["document_uuid_s"] = id
+        _params = {}
+        _conditions = {}
+
+
+        for _prm in sorted(self.parameters):
+            if _prm in self.tags_params:
+                _params[_prm] = self.parameters[_prm]
+            else:
+                _conditions[_prm] = self.parameters[_prm]
+
+        _solr["document_uuid_s"] = self.document_uuid(id,json.dumps(_params))
+
         _params["id"] = id + "/prm"
         _params["topcategory_s"] = self.topcategory
         _params["endpointcategory_s"] = self.endpointcategory
         _params["E.method_s"] = self.method
         _params["type_s"] = "params"
-        _solr["_childDocuments_"] = [_params]
+
+
+        _conditions["id"] = id + "/cn"
+        _conditions["topcategory_s"] = self.topcategory
+        _conditions["effectid_hs"] = id
+        _conditions["endpointcategory_s"] = self.endpointcategory
+        _conditions["type_s"] = "conditions"
+
+
+
+        _conditions["document_uuid_s"] = _solr["document_uuid_s"]
+        _params["document_uuid_s"] = _solr["document_uuid_s"]
+        _solr["_childDocuments_"] = [_params,_conditions]
+
         return _solr
 
 
@@ -68,10 +97,12 @@ class Substance:
         self.substance_type = substance_type
         self.studies = []
 
+
     def add_study(self, study):
         self.studies.append(study)
 
     def to_solr_json(self):
+
         _solr = {}
         _solr["content_hss"] = [hsds_investigation]
         _solr["dbtag_hss"] = "CRMA"
@@ -87,6 +118,7 @@ class Substance:
         _studies = []
         _solr["SUMMARY.RESULTS_hss"] = []
         for _study in self.studies:
+            print(_study);
             _study_solr = _study.to_solr_json()
             _study_solr["s_uuid_s"] = _suuid
             _study_solr["type_s"] = "study"
@@ -149,7 +181,7 @@ def lookup_substancetype(name):
         return _dict[name.upper()]
     except Exception as err:
         return "CHEBI_59999"
-    
+
 
 substances = {}
 # for _file in _files:
@@ -159,9 +191,11 @@ with open(config_input, 'r') as infile:
     config = json.load(infile)
 
 for entry in config:
-    # if not entry["enabled"]:
-    #    continue
+
+    if index_enabled_only and not entry["enabled"] :
+       continue
     try:
+        print(entry)
         h5domain = "/{}/{}/{}/{}/".format(hsds_investigation,
                                           entry["hsds_provider"], entry["hsds_instrument"], entry["hsds_wavelength"])
         domain = h5pyd.Folder(h5domain)
@@ -173,6 +207,8 @@ for entry in config:
                 file_name = s["name"]
                 if file_name.endswith(".cha"):
                     substances = ramanchada2ambit(file_name, substances)
+
+                    pass
     except Exception as err:
         print(err)
 

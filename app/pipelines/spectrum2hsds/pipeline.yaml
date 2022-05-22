@@ -1,16 +1,16 @@
 tasks:
   - source: tasks.metadata.read_metadata
-    product: 
+    product:
       data: products/metadata/
 #      nb: products/metadata.get.ipynb
     params:
       root_folder: "{{root_folder}}"
-      config_input: "{{config_input}}"    
+      config_input: "{{config_input}}"
 
 # tbd task to create provider/instrument/wavelength ; if not existing the submit will fail
 
   - source: tasks.api.folders2hsds
-    product: 
+    product:
       data: products/logs/
   #    nb: products/metadata.get.ipynb
     params:
@@ -23,19 +23,26 @@ tasks:
       dry_run: "{{dry_run}}"
 
   - source: tasks/process.py
-    product: 
+    product:
       data: products/peaks/
       nb: products/process.ipynb
-    params:   
+    params:
       hsds_investigation: "{{hsds_investigation}}"
       config_input: "{{config_input}}"
-      dry_run: "{{dry_run}}"      
+      dry_run: "{{dry_run}}"
 
   - source: tasks/datamodel.py
-    product: 
+    product:
       data: "{{charisma_json}}"
       nb: products/datamodel.ipynb
     params:
       hsds_investigation: "{{hsds_investigation}}"
       config_input: "{{config_input}}"
+      index_enabled_only: "{{index_enabled_only}}"
 
+  - source: tasks/diagram.py
+    product:
+        nb: products/diagram.ipynb
+        data: products/diagram
+    params:
+      config_input: "{{config_input}}"
