@@ -46,6 +46,8 @@ setup(
         "scipy",
         "spc @ git+https://github.com/glemaitre/spc.git@44b67d49e1e4fe9364e7cbce9a93086037703511",
         "specio @ git+https://github.com/paris-saclay-cds/specio.git@2963fd5bf6633e4b37d0a912c3ad0293371f5c7d",
-        "opusFC"
+        "opusFC",
+        "seaborn",
+        "statsmodels",
     ],
 )
