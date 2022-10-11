@@ -25,3 +25,5 @@ As agreed upon between the project participants, the RamanChada project is to be
 ## Signatures
 
 *NB: Format is* `* [name]: [email1], [email2], ...`
+
+* Luchesar Iliev: <luchesar.iliev@gmail.com>, <dev-charisma@ideaconsult.net>
