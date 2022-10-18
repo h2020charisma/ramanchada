@@ -27,3 +27,4 @@ As agreed upon between the project participants, the RamanChada project is to be
 *NB: Format is* `* [name]: [email1], [email2], ...`
 
 * Luchesar Iliev: <luchesar.iliev@gmail.com>, <dev-charisma@ideaconsult.net>
+* Dirk Lellinger: <dirk.lellinger@lbf.fraunhofer.de>
