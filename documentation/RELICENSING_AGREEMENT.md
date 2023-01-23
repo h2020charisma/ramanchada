@@ -30,3 +30,4 @@ As agreed upon between the project participants, the RamanChada project is to be
 * Dirk Lellinger: <dirk.lellinger@lbf.fraunhofer.de>
 * Nina Jeliazkova: <jeliazkova.nina@gmail.com>
 * James Matthew Thomson: <jamest@elodiz.com>, <jamesmatthewthomson@gmail.com>
+* Bastian Barton: <bastian.barton@lbf.fraunhofer.de>, <bastian.Barton@lbf.fraunhofer.de>, <Bastian.Barton@lbf.fraunhofer.de>
