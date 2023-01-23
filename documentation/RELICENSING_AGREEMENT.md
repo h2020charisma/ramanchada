@@ -1,7 +1,7 @@
 # Relicensing Agreement
 
 ## Introduction
-As agreed upon between the project participants, the RamanChada project is to be published under an open license. This requires all contributors to agree to resubmit their contributions under the new license. This page contains the list of all contributors to the `main` branch as of 11 October 2022 as identified by running `git shortlog --summary --numbered --email`, the text of the relicensing agreement, and the signatures of the contributors accepting the agreement along with the email addresses under which they have made contributions. Each signature is to be made by a separate Git commit from the respective contributor.
+As agreed upon between the project participants, the RamanChada project is to be published under an open license. This requires all contributors to agree to resubmit their contributions under the new license. This page contains the list of all contributors to the `main` branch as of 11 October 2022 as identified by running `git shortlog --summary --numbered --email`, the text of the relicensing agreement, and the signatures of the contributors accepting the agreement along with the email addresses under which they have made contributions. Each signature is to be made by a separate Git commit from the respective contributor. Alternatively, a contributor may send their agreement via email (Ref: "Relicensing RamanChada under the MIT License" email to the contributors by Luchesar ILIEV <luchesar.iliev@gmail.com> from Tue, 11 Oct 2022 15:26:04 +0300). In the latter case the respective headers and content of the email shall be added to the commit message.
 
 ## List of contributors
 
