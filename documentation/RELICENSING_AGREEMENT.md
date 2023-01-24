@@ -28,7 +28,7 @@ As agreed upon between the project participants, the RamanChada project is to be
 
 * Luchesar Iliev: <luchesar.iliev@gmail.com>, <dev-charisma@ideaconsult.net>
 * Dirk Lellinger: <dirk.lellinger@lbf.fraunhofer.de>
-* Nina Jeliazkova: <jeliazkova.nina@gmail.com>
+* Nina Jeliazkova: <jeliazkova.nina@gmail.com>, <jeliazkova.nina@@gmail.com>, <dev-charisma@ideaconsult.net>
 * James Matthew Thomson: <jamest@elodiz.com>, <jamesmatthewthomson@gmail.com>
 * Bastian Barton: <bastian.barton@lbf.fraunhofer.de>, <bastian.Barton@lbf.fraunhofer.de>, <Bastian.Barton@lbf.fraunhofer.de>
 * Georgi Georgiev: <georgiev.georgi.st@gmail.com>
