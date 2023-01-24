@@ -31,3 +31,4 @@ As agreed upon between the project participants, the RamanChada project is to be
 * Nina Jeliazkova: <jeliazkova.nina@gmail.com>
 * James Matthew Thomson: <jamest@elodiz.com>, <jamesmatthewthomson@gmail.com>
 * Bastian Barton: <bastian.barton@lbf.fraunhofer.de>, <bastian.Barton@lbf.fraunhofer.de>, <Bastian.Barton@lbf.fraunhofer.de>
+* Georgi Georgiev: <georgiev.georgi.st@gmail.com>
